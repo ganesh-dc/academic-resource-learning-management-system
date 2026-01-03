@@ -1,0 +1,761 @@
+{% extends 'myapp/base.html' %}
+
+{% block title %}{{ resource.title }} - ARLMS{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'resource_list' %}">Resources</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'resource_list' %}?category={{ resource.category.id }}">{{ resource.category.name|default:"All" }}</a></li>
+            <li class="breadcrumb-item active">{{ resource.title|truncatechars:30 }}</li>
+        </ol>
+    </nav>
+
+    <!-- Main Resource Card -->
+    <div class="row">
+        <!-- Left Column: Resource Info -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ resource.title }}</h3>
+                            <small>
+                                By <strong>{{ resource.uploaded_by.get_full_name|default:resource.uploaded_by.username }}</strong>
+                                {% if resource.uploaded_by.role == 'teacher' %}
+                                <span class="badge bg-warning ms-2">Teacher</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div>
+                            {% if resource.is_premium %}
+                                <span class="badge bg-warning fs-6">
+                                    <i class="fas fa-crown me-1"></i>Premium
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success fs-6">
+                                    <i class="fas fa-unlock me-1"></i>Free
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Resource Details -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <h5 class="text-muted">Description</h5>
+                            <p class="lead">{{ resource.description|linebreaks }}</p>
+                            
+                            <!-- Metadata -->
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            <span class="text-muted">
+                                                <i class="fas fa-eye me-2"></i>Views
+                                            </span>
+                                            <span class="badge bg-info">{{ resource.views|default:0 }}</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            <span class="text-muted">
+                                                <i class="fas fa-download me-2"></i>Downloads
+                                            </span>
+                                            <span class="badge bg-secondary">{{ resource.download_count|default:0 }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            <span class="text-muted">
+                                                <i class="fas fa-calendar me-2"></i>Uploaded
+                                            </span>
+                                            <span>{{ resource.uploaded_date|date:"M d, Y" }}</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            <span class="text-muted">
+                                                <i class="fas fa-tag me-2"></i>Category
+                                            </span>
+                                            <span class="badge bg-primary">{{ resource.category.name|default:"Uncategorized" }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <!-- Price Card -->
+                            <div class="card {% if resource.is_premium %}border-warning{% else %}border-success{% endif %} mb-3">
+                                <div class="card-header {% if resource.is_premium %}bg-warning{% else %}bg-success{% endif %} text-white">
+                                    <h5 class="mb-0 text-center">
+                                        {% if resource.is_premium %}
+                                            <i class="fas fa-crown me-2"></i>Premium Resource
+                                        {% else %}
+                                            <i class="fas fa-unlock me-2"></i>Free Resource
+                                        {% endif %}
+                                    </h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    {% if resource.is_premium %}
+                                        <h2 class="text-warning">${{ resource.price|floatformat:2 }}</h2>
+                                        <p class="text-muted mb-3">One-time purchase</p>
+                                        
+                                        {% if request.user.is_authenticated %}
+                                            {% if request.user == resource.uploaded_by %}
+                                                <button class="btn btn-outline-secondary w-100" disabled>
+                                                    <i class="fas fa-check"></i> Your Resource
+                                                </button>
+                                            {% elif has_purchased %}
+                                                <button class="btn btn-success w-100" disabled>
+                                                    <i class="fas fa-check-circle"></i> Purchased
+                                                </button>
+                                            {% else %}
+                                                <!-- FIXED: Added missing closing </a> tag -->
+                                                <a href="{% url 'payment_options' resource.id %}" class="btn btn-warning w-100">
+                                                    <i class="fas fa-shopping-cart"></i> Purchase Now
+                                                </a>
+                                            {% endif %}
+                                        {% else %}
+                                            <a href="{% url 'login' %}?next={% url 'resource_detail' resource.id %}" 
+                                               class="btn btn-warning w-100">
+                                                <i class="fas fa-sign-in-alt"></i> Login to Purchase
+                                            </a>
+                                        {% endif %}
+                                    {% else %}
+                                        <h2 class="text-success">FREE</h2>
+                                        <p class="text-muted mb-3">Download for free</p>
+                                        
+                                        {% if request.user.is_authenticated %}
+                                            {% if resource.file and resource.file.name %}
+                                                <a href="{% url 'download_resource' resource.id %}" class="btn btn-success w-100">
+                                                    <i class="fas fa-download"></i> Download Now
+                                                </a>
+                                            {% else %}
+                                                <button class="btn btn-secondary w-100" disabled>
+                                                    <i class="fas fa-exclamation-circle"></i> No File Available
+                                                </button>
+                                            {% endif %}
+                                        {% else %}
+                                            <a href="{% url 'login' %}?next={% url 'download_resource' resource.id %}" 
+                                               class="btn btn-success w-100">
+                                                <i class="fas fa-sign-in-alt"></i> Login to Download
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- File Info -->
+                            <div class="card border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-file me-2"></i>File Information
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        {% if resource.file and resource.file.name %}
+                                            <!-- File exists - show file icon -->
+                                            {% if resource.file.name|lower|slice:'-4:' == '.pdf' %}
+                                                <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
+                                            {% elif resource.file.name|lower|slice:'-5:' == '.docx' or resource.file.name|lower|slice:'-4:' == '.doc' %}
+                                                <i class="fas fa-file-word fa-3x text-primary mb-2"></i>
+                                            {% elif resource.file.name|lower|slice:'-5:' == '.pptx' or resource.file.name|lower|slice:'-4:' == '.ppt' %}
+                                                <i class="fas fa-file-powerpoint fa-3x text-danger mb-2"></i>
+                                            {% elif resource.file.name|lower|slice:'-5:' == '.xlsx' or resource.file.name|lower|slice:'-4:' == '.xls' %}
+                                                <i class="fas fa-file-excel fa-3x text-success mb-2"></i>
+                                            {% elif resource.file.name|lower|slice:'-4:' == '.zip' or resource.file.name|lower|slice:'-4:' == '.rar' %}
+                                                <i class="fas fa-file-archive fa-3x text-warning mb-2"></i>
+                                            {% else %}
+                                                <i class="fas fa-file fa-3x text-secondary mb-2"></i>
+                                            {% endif %}
+                                            
+                                            <p class="mb-1">
+                                                <strong>{{ resource.file.name|slice:"-30:" }}</strong>
+                                            </p>
+                                            {% if resource.file.size %}
+                                                <p class="text-muted mb-0">
+                                                    <small>
+                                                        {{ resource.file.size|filesizeformat }}
+                                                    </small>
+                                                </p>
+                                            {% endif %}
+                                        {% else %}
+                                            <!-- No file - show placeholder -->
+                                            <i class="fas fa-file-exclamation fa-3x text-warning mb-2"></i>
+                                            <p class="mb-1">
+                                                <strong>No file uploaded</strong>
+                                            </p>
+                                            <p class="text-muted mb-0">
+                                                <small>Contact the teacher for the file</small>
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <div>
+                            {% if request.user.is_authenticated %}
+                                {% if request.user == resource.uploaded_by %}
+                                    <a href="{% url 'edit_resource' resource.id %}" class="btn btn-warning me-2">
+                                        <i class="fas fa-edit"></i> Edit Resource
+                                    </a>
+                                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                {% endif %}
+                                
+                                {% if request.user.role == 'admin' %}
+                                    <a href="{% url 'edit_resource' resource.id %}" class="btn btn-outline-warning me-2">
+                                        <i class="fas fa-edit"></i> Admin Edit
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            {% if request.user.is_authenticated %}
+                                {% if resource.is_premium %}
+                                    {% if has_purchased or request.user == resource.uploaded_by %}
+                                        {% if resource.file and resource.file.name %}
+                                            <a href="{% url 'download_resource' resource.id %}" class="btn btn-success">
+                                                <i class="fas fa-download"></i> Download
+                                            </a>
+                                        {% else %}
+                                            <button class="btn btn-secondary" disabled title="No file available">
+                                                <i class="fas fa-download"></i> No File
+                                            </button>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    {% if resource.file and resource.file.name %}
+                                        <a href="{% url 'download_resource' resource.id %}" class="btn btn-success">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-secondary" disabled title="No file available">
+                                            <i class="fas fa-download"></i> No File
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedback Section -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-comments me-2"></i>Student Feedback
+                            <span class="badge bg-light text-dark ms-2">{{ feedbacks|length }}</span>
+                        </h4>
+                        
+                        <!-- FIXED: Use avg_rating from view context -->
+                        {% if feedbacks and avg_rating > 0 %}
+                            <div class="rating-display">
+                                <span class="text-light me-2">Average:</span>
+                                <div class="rating-stars">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= avg_rating %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-light"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="ms-2 text-light">{{ avg_rating|floatformat:1 }}/5</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Feedback Form (Only for authenticated students who have access) -->
+                    {% if request.user.is_authenticated and request.user.role == 'student' %}
+                        {% if not resource.is_premium or has_purchased or request.user == resource.uploaded_by %}
+                            <div class="feedback-form mb-4 p-3 border rounded bg-light">
+                                <h5><i class="fas fa-edit me-2"></i>Share Your Feedback</h5>
+                                <form method="POST" action="{% url 'submit_feedback' resource.id %}">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label class="form-label">Rating:</label>
+                                        <div class="rating-input mb-2">
+                                            {% for i in "54321" %}
+                                                <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" 
+                                                       {% if forloop.last %}checked{% endif %} class="d-none">
+                                                <label for="star{{ i }}" class="star-label" title="{{ i }} stars">
+                                                    <i class="far fa-star"></i>
+                                                </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Your Feedback:</label>
+                                        <textarea name="message" class="form-control" rows="3" 
+                                                  placeholder="What did you like about this resource? How can it be improved?"
+                                                  required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane me-2"></i>Submit Feedback
+                                    </button>
+                                    <small class="text-muted ms-2">
+                                        <i class="fas fa-info-circle"></i> Teacher will be notified of your feedback
+                                    </small>
+                                </form>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-lock me-2"></i>
+                                You need to purchase this resource to leave feedback.
+                            </div>
+                        {% endif %}
+                    {% elif not request.user.is_authenticated %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            <a href="{% url 'login' %}?next={% url 'resource_detail' resource.id %}" class="alert-link">
+                                Login
+                            </a> to leave feedback on this resource.
+                        </div>
+                    {% endif %}
+
+                    <!-- Feedback List -->
+                    {% if feedbacks %}
+                        <div class="feedback-list">
+                            <h5 class="mb-3">Recent Feedback</h5>
+                            {% for feedback in feedbacks %}
+                                <div class="feedback-item border-bottom pb-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <strong>{{ feedback.user.get_full_name|default:feedback.user.username }}</strong>
+                                            {% if feedback.user.role == 'student' %}
+                                                <span class="badge bg-success ms-2">Student</span>
+                                            {% elif feedback.user.role == 'teacher' %}
+                                                <span class="badge bg-warning ms-2">Teacher</span>
+                                            {% endif %}
+                                            <small class="text-muted ms-2">
+                                                {{ feedback.created_at|timesince }} ago
+                                            </small>
+                                        </div>
+                                        <div class="rating-stars">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= feedback.rating %}
+                                                    <i class="fas fa-star text-warning"></i>
+                                                {% else %}
+                                                    <i class="far fa-star text-muted"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <p class="mb-0">{{ feedback.message|linebreaks }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Feedback Yet</h5>
+                            <p class="text-muted">Be the first to share your thoughts on this resource!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Teacher Info & Related Resources -->
+        <div class="col-lg-4">
+            <!-- Teacher Info Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>About the Teacher
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="teacher-avatar mb-3">
+                        <i class="fas fa-user-circle fa-4x text-primary"></i>
+                    </div>
+                    <h5>{{ resource.uploaded_by.get_full_name|default:resource.uploaded_by.username }}</h5>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-envelope me-1"></i>
+                        {{ resource.uploaded_by.email }}
+                    </p>
+                    {% if resource.uploaded_by.phone %}
+                        <p class="text-muted mb-3">
+                            <i class="fas fa-phone me-1"></i>
+                            {{ resource.uploaded_by.phone }}
+                        </p>
+                    {% endif %}
+                    
+                    <!-- Teacher Stats -->
+                    <div class="row text-center mt-3">
+                        <div class="col-6">
+                            <h6 class="text-primary">
+                                {{ resource.uploaded_by.uploaded_resources.count }}
+                            </h6>
+                            <small class="text-muted">Resources</small>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-success">
+                                {{ total_downloads|default:0 }}
+                            </h6>
+                            <small class="text-muted">Downloads</small>
+                        </div>
+                    </div>
+                    
+                    {% if request.user != resource.uploaded_by %}
+                        <a href="{% url 'view_profile' resource.uploaded_by.id %}" class="btn btn-outline-primary w-100 mt-3">
+                            <i class="fas fa-user me-2"></i>View Teacher Profile
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Related Resources -->
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-link me-2"></i>Related Resources
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% with related_resources=resource.category.resources.all|slice:":5" %}
+                        {% if related_resources %}
+                            <div class="list-group list-group-flush">
+                                {% for related in related_resources %}
+                                    {% if related.id != resource.id %}
+                                        <a href="{% url 'resource_detail' related.id %}" 
+                                           class="list-group-item list-group-item-action">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1">{{ related.title|truncatechars:30 }}</h6>
+                                                {% if related.is_premium %}
+                                                    <small class="text-warning">${{ related.price }}</small>
+                                                {% else %}
+                                                    <small class="text-success">Free</small>
+                                                {% endif %}
+                                            </div>
+                                            <small class="text-muted">
+                                                By {{ related.uploaded_by.username }}
+                                            </small>
+                                        </a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-center mb-0">No related resources found.</p>
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <a href="{% url 'resource_list' %}" class="btn btn-outline-success w-100 mt-3">
+                        <i class="fas fa-book-open me-2"></i>Browse All Resources
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card shadow mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Resource Stats
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h5 class="text-info">{{ resource.views|default:0 }}</h5>
+                            <small class="text-muted">Views</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-success">{{ resource.download_count|default:0 }}</h5>
+                            <small class="text-muted">Downloads</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-warning">{{ feedbacks|length }}</h5>
+                            <small class="text-muted">Reviews</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the resource:</p>
+                <div class="alert alert-warning">
+                    <h5 class="mb-0">{{ resource.title }}</h5>
+                </div>
+                <p class="text-danger">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    This action cannot be undone. All feedback and download records will be lost.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{% url 'delete_resource' resource.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Delete Resource
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Resource Detail Styles */
+    .breadcrumb {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 10px 15px;
+    }
+    
+    .card {
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        border-bottom: none;
+        padding: 1rem 1.25rem;
+    }
+    
+    /* Rating Stars */
+    .rating-input {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+    }
+    
+    .rating-input input[type="radio"]:checked ~ label i,
+    .rating-input label:hover i,
+    .rating-input label:hover ~ label i {
+        color: #ffc107;
+    }
+    
+    .star-label {
+        cursor: pointer;
+        font-size: 1.5rem;
+        padding: 0 2px;
+        transition: color 0.2s;
+    }
+    
+    .star-label i {
+        color: #dee2e6;
+        transition: color 0.2s;
+    }
+    
+    .rating-input input[type="radio"]:checked + label i {
+        color: #ffc107;
+    }
+    
+    .rating-stars {
+        display: inline-flex;
+        gap: 2px;
+    }
+    
+    /* Feedback Items */
+    .feedback-form {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .feedback-item:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    
+    /* Teacher Avatar */
+    .teacher-avatar {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .teacher-avatar i {
+        color: white;
+    }
+    
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .card-header h3, .card-header h4 {
+            font-size: 1.25rem;
+        }
+        
+        .btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        .teacher-avatar {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .teacher-avatar i {
+            font-size: 2.5rem;
+        }
+    }
+    
+    /* Hover Effects */
+    .list-group-item-action:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+        transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    /* Badge Styles */
+    .badge {
+        padding: 0.35em 0.65em;
+        font-weight: 500;
+    }
+    
+    /* Price Display */
+    .text-warning {
+        color: #ffc107 !important;
+    }
+    
+    .text-success {
+        color: #28a745 !important;
+    }
+    
+    /* File Icon Colors */
+    .fa-file-pdf { color: #dc3545; }
+    .fa-file-word { color: #2b579a; }
+    .fa-file-powerpoint { color: #d24726; }
+    .fa-file-excel { color: #217346; }
+    .fa-file-archive { color: #6f42c1; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize star rating
+    const starInputs = document.querySelectorAll('.rating-input input[type="radio"]');
+    const starLabels = document.querySelectorAll('.star-label');
+    
+    starLabels.forEach(label => {
+        label.addEventListener('click', function() {
+            const inputId = this.getAttribute('for');
+            const input = document.getElementById(inputId);
+            input.checked = true;
+            
+            // Update star display
+            const rating = input.value;
+            starLabels.forEach((l, index) => {
+                const starIcon = l.querySelector('i');
+                if (5 - index <= rating) {
+                    starIcon.className = 'fas fa-star text-warning';
+                } else {
+                    starIcon.className = 'far fa-star';
+                }
+            });
+        });
+        
+        label.addEventListener('mouseover', function() {
+            const inputId = this.getAttribute('for');
+            const rating = document.getElementById(inputId).value;
+            
+            starLabels.forEach((l, index) => {
+                const starIcon = l.querySelector('i');
+                if (5 - index <= rating) {
+                    starIcon.className = 'fas fa-star text-warning';
+                }
+            });
+        });
+        
+        label.addEventListener('mouseout', function() {
+            const checkedInput = document.querySelector('.rating-input input[type="radio"]:checked');
+            const rating = checkedInput ? checkedInput.value : 1;
+            
+            starLabels.forEach((l, index) => {
+                const starIcon = l.querySelector('i');
+                if (5 - index <= rating) {
+                    starIcon.className = 'fas fa-star text-warning';
+                } else {
+                    starIcon.className = 'far fa-star';
+                }
+            });
+        });
+    });
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Handle delete confirmation
+    const deleteModal = document.getElementById('deleteModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('shown.bs.modal', function () {
+            console.log('Delete modal shown');
+        });
+    }
+    
+    // Auto-expand textareas on focus
+    const textareas = document.querySelectorAll('textarea');
+    textareas.forEach(textarea => {
+        textarea.addEventListener('focus', function() {
+            this.style.minHeight = '100px';
+        });
+        
+        textarea.addEventListener('blur', function() {
+            if (!this.value) {
+                this.style.minHeight = '';
+            }
+        });
+    });
+    
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const href = this.getAttribute('href');
+            if (href !== '#') {
+                e.preventDefault();
+                const targetElement = document.querySelector(href);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

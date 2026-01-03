@@ -1,0 +1,392 @@
+{% extends 'myapp/base.html' %}
+{% block title %}Purchase {{ resource.title }} - ARLMS{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="background-color: #f8fafc; min-height: 100vh;">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <!-- Progress Steps -->
+      <div class="d-flex align-items-center justify-content-center mb-5">
+        <div class="step active">
+          <div class="step-circle">1</div>
+          <span class="step-label">Select Resource</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step active">
+          <div class="step-circle">2</div>
+          <span class="step-label">Payment Method</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+          <div class="step-circle">3</div>
+          <span class="step-label">Complete</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Left: Resource Info -->
+        <div class="col-lg-7">
+          <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; border: 1px solid #e5e7eb;">
+            <div class="card-header bg-white border-0 py-3">
+              <h4 class="fw-bold mb-0">
+                <i class="fas fa-file-alt text-primary me-2"></i>
+                Resource Details
+              </h4>
+            </div>
+            <div class="card-body">
+              <div class="d-flex align-items-start">
+                <!-- File Icon -->
+                <div class="flex-shrink-0 me-4">
+                  {% if resource.file %}
+                    {% if resource.file.name|lower|slice:'-4:' == '.pdf' %}
+                      <div class="p-3 rounded-3" style="background-color: #fee2e2;">
+                        <i class="fas fa-file-pdf fa-3x" style="color: #dc2626;"></i>
+                      </div>
+                    {% elif resource.file.name|lower|slice:'-5:' == '.docx' or resource.file.name|lower|slice:'-4:' == '.doc' %}
+                      <div class="p-3 rounded-3" style="background-color: #e0e7ff;">
+                        <i class="fas fa-file-word fa-3x" style="color: #4f46e5;"></i>
+                      </div>
+                    {% else %}
+                      <div class="p-3 rounded-3" style="background-color: #f3f4f6;">
+                        <i class="fas fa-file-alt fa-3x" style="color: #6b7280;"></i>
+                      </div>
+                    {% endif %}
+                  {% endif %}
+                </div>
+                
+                <!-- Resource Info -->
+                <div class="flex-grow-1">
+                  <h5 class="fw-bold mb-2" style="color: #1f2937;">{{ resource.title }}</h5>
+                  <div class="mb-3">
+                    <span class="badge px-3 py-1 rounded-pill me-2" style="background-color: #e0e7ff; color: #4f46e5;">
+                      {{ resource.category.name|default:"Uncategorized" }}
+                    </span>
+                    <span class="badge px-3 py-1 rounded-pill" style="background-color: #f3f4f6; color: #6b7280;">
+                      {{ resource.get_file_type_display|default:"File" }}
+                    </span>
+                  </div>
+                  <div class="d-flex align-items-center text-muted mb-3">
+                    <i class="fas fa-user-graduate me-1"></i>
+                    <span>{{ resource.uploaded_by.get_full_name|default:resource.uploaded_by.username }}</span>
+                  </div>
+                  <p class="text-muted small mb-0">{{ resource.description|truncatechars:150 }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Methods -->
+          <div class="card shadow-sm border-0" style="border-radius: 12px; border: 1px solid #e5e7eb;">
+            <div class="card-header bg-white border-0 py-3">
+              <h4 class="fw-bold mb-0">
+                <i class="fas fa-credit-card text-primary me-2"></i>
+                Choose Payment Method
+              </h4>
+              <p class="text-muted small mb-0">Select your preferred payment option</p>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <!-- eSewa -->
+                <div class="col-md-6">
+                  <div class="payment-option">
+                    <input type="radio" name="paymentMethod" id="esewa" value="esewa" checked>
+                    <label for="esewa" class="payment-label">
+                      <div class="d-flex align-items-center">
+                        <div class="payment-icon me-3">
+                          <div class="p-2 rounded-2" style="background-color: #4f46e5;">
+                            <i class="fas fa-mobile-alt fa-2x text-white"></i>
+                          </div>
+                        </div>
+                        <div>
+                          <h6 class="fw-bold mb-1">eSewa</h6>
+                          <p class="text-muted small mb-0">Mobile Wallet</p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Khalti -->
+                <div class="col-md-6">
+                  <div class="payment-option">
+                    <input type="radio" name="paymentMethod" id="khalti" value="khalti">
+                    <label for="khalti" class="payment-label">
+                      <div class="d-flex align-items-center">
+                        <div class="payment-icon me-3">
+                          <div class="p-2 rounded-2" style="background-color: #7c3aed;">
+                            <i class="fas fa-wallet fa-2x text-white"></i>
+                          </div>
+                        </div>
+                        <div>
+                          <h6 class="fw-bold mb-1">Khalti</h6>
+                          <p class="text-muted small mb-0">Digital Wallet</p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              
+
+
+              <!-- Terms -->
+              <div class="mt-4 pt-3 border-top">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="agreeTerms">
+                  <label class="form-check-label small" for="agreeTerms">
+                    I agree to purchase <strong>"{{ resource.title }}"</strong> for <strong>Rs {{ resource.price }}</strong>. 
+                    This is a one-time payment for lifetime access with up to 5 downloads.
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Order Summary -->
+        <div class="col-lg-5">
+          <div class="card shadow-sm border-0 sticky-top" style="top: 20px; border-radius: 12px; border: 1px solid #e5e7eb;">
+            <div class="card-header py-3" style="background-color: #4f46e5; color: white; border-radius: 12px 12px 0 0;">
+              <h4 class="mb-0">
+                <i class="fas fa-receipt me-2"></i>
+                Purchase Summary
+              </h4>
+            </div>
+            <div class="card-body">
+              <!-- Price Breakdown -->
+              <div class="mb-4">
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-muted">Resource Price</span>
+                  <span class="fw-medium">Rs {{ resource.price }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-muted">Platform Fee</span>
+                  <span class="text-success">Free</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                  <span class="text-muted">Tax</span>
+                  <span class="text-success">Rs 0.00</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between fw-bold fs-5">
+                  <span>Total</span>
+                  <span class="text-primary">Rs {{ resource.price }}</span>
+                </div>
+              </div>
+
+              <!-- Student Info -->
+              <div class="border-top pt-3 mb-4">
+                <h6 class="fw-bold mb-3" style="color: #4b5563;">
+                  <i class="fas fa-user-graduate text-primary me-2"></i>
+                  Student Information
+                </h6>
+                <p class="mb-1">
+                  <strong>Name:</strong> {{ user.get_full_name|default:user.username }}
+                </p>
+                <p class="mb-1">
+                  <strong>ID:</strong> {{ user.student_id|default:"N/A" }}
+                </p>
+                <p class="mb-0">
+                  <strong>Email:</strong> {{ user.email }}
+                </p>
+              </div>
+
+              <!-- Pay Button -->
+              <button id="payButton" class="btn btn-lg w-100 py-3 mb-3 fw-bold" 
+                      style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;"
+                      onclick="processPayment()">
+                <i class="fas fa-lock me-2"></i>
+                Pay Rs {{ resource.price }}
+              </button>
+
+              <!-- Security -->
+              <div class="text-center mb-3">
+                <p class="text-muted small">
+                  <i class="fas fa-shield-alt text-success me-1"></i>
+                  Secure SSL Encrypted Payment
+                </p>
+              </div>
+
+              <!-- Accepted Payment Methods -->
+              <div class="border-top pt-3">
+                <h6 class="fw-bold mb-2 small" style="color: #4b5563;">Accepted Payment Methods</h6>
+                <div class="d-flex justify-content-center gap-3 mb-3">
+                  <div class="text-center">
+                    <div class="p-2 rounded-2 mb-1" style="background-color: #eef2ff;">
+                      <i class="fab fa-cc-visa fa-lg" style="color: #4f46e5;"></i>
+                    </div>
+                    <small class="text-muted">eSewa</small>
+                  </div>
+                  <div class="text-center">
+                    <div class="p-2 rounded-2 mb-1" style="background-color: #f5f3ff;">
+                      <i class="fas fa-wallet fa-lg" style="color: #7c3aed;"></i>
+                    </div>
+                    <small class="text-muted">Khalti</small>
+                  </div>
+                </div>
+                <p class="small text-muted mb-0 text-center">
+                  <i class="fas fa-clock me-1"></i>
+                  Immediate access after payment
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Back Button -->
+          <div class="text-center mt-4">
+            <a href="{% url 'resource_detail' resource.id %}" class="btn btn-outline-primary px-4">
+              <i class="fas fa-arrow-left me-2"></i>
+              Back to Resource
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.step {
+  text-align: center;
+  min-width: 120px;
+}
+
+.step-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  font-weight: bold;
+}
+
+.step.active .step-circle {
+  background-color: #4f46e5;
+  color: white;
+}
+
+.step-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.step.active .step-label {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background-color: #e5e7eb;
+  margin: 20px 10px 0;
+}
+
+.payment-option {
+  margin-bottom: 10px;
+}
+
+.payment-option input[type="radio"] {
+  display: none;
+}
+
+.payment-label {
+  display: block;
+  padding: 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.payment-label:hover {
+  border-color: #c7d2fe;
+  background-color: #f8fafc;
+}
+
+.payment-option input[type="radio"]:checked + .payment-label {
+  border-color: #4f46e5;
+  background-color: #eef2ff;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.1);
+}
+
+.payment-icon {
+  width: 50px;
+}
+
+.btn {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+#payButton:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.badge {
+  font-weight: 500;
+}
+
+.alert {
+  border-radius: 8px;
+  border: 1px solid #dbeafe;
+}
+</style>
+
+<script>
+function processPayment() {
+  const terms = document.getElementById('agreeTerms');
+  const method = document.querySelector('input[name="paymentMethod"]:checked');
+  const payBtn = document.getElementById('payButton');
+  
+  if (!terms.checked) {
+    alert('Please agree to the terms before proceeding.');
+    return;
+  }
+  
+  if (!method) {
+    alert('Please select a payment method.');
+    return;
+  }
+  
+  // Disable button and show loading
+  payBtn.disabled = true;
+  payBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+  
+  // Get selected payment method
+  const paymentMethod = method.value;
+  
+  // Redirect to initiate payment
+  setTimeout(() => {
+    if (paymentMethod === 'demo') {
+      window.location.href = "{% url 'initiate_payment' resource.id %}";
+    } else {
+      window.location.href = "{% url 'initiate_payment' resource.id %}?method=" + paymentMethod;
+    }
+  }, 1000);
+}
+
+// Initialize eSewa as selected by default
+document.addEventListener('DOMContentLoaded', function() {
+  const esewaRadio = document.getElementById('esewa');
+  if (esewaRadio) {
+    esewaRadio.checked = true;
+    // Add active class to eSewa label
+    const esewaLabel = document.querySelector('label[for="esewa"]');
+    if (esewaLabel) {
+      esewaLabel.classList.add('active');
+    }
+  }
+});
+</script>
+{% endblock %}

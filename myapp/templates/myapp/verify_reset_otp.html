@@ -1,0 +1,57 @@
+{% extends 'myapp/base.html' %}
+{% block title %}Verify OTP - ARLMS{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>Verify OTP
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <p class="text-muted mb-4">
+                        Enter the 6-digit OTP sent to <strong>{{ email }}</strong>.
+                        <strong>Check Django terminal for OTP.</strong>
+                    </p>
+                    
+                    <form method="POST" action="{% url 'verify_reset_otp' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">6-Digit OTP *</label>
+                            <input type="text" class="form-control" name="otp" required
+                                   placeholder="Enter 6-digit OTP" maxlength="6"
+                                   pattern="\d{6}" title="Please enter exactly 6 digits">
+                            <small class="form-text text-muted">OTP is valid for 10 minutes</small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-check me-2"></i>Verify OTP
+                            </button>
+                            <a href="{% url 'forgot_password' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo me-2"></i>Resend OTP
+                            </a>
+                            <a href="{% url 'login' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Login
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'myapp/base.html' %}
+
+{% block title %}Confirm Delete - ARLMS{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger shadow">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+                        <h3>Are you sure?</h3>
+                        <p class="text-muted">
+                            You are about to delete the following resource:
+                        </p>
+                        <div class="alert alert-warning">
+                            <h5>{{ resource.title }}</h5>
+                            <p class="mb-1"><strong>Type:</strong> 
+                                {% if resource.is_premium %}
+                                <span class="badge bg-warning">Premium</span>
+                                {% else %}
+                                <span class="badge bg-success">Free</span>
+                                {% endif %}
+                            </p>
+                            <p class="mb-0"><strong>Uploaded:</strong> {{ resource.uploaded_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <strong>Warning:</strong> This action cannot be undone!
+                        </div>
+                    </div>
+                    
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-trash me-2"></i> Yes, Delete Resource
+                            </button>
+                            <a href="{% url 'resource_detail' resource.id %}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-times me-2"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

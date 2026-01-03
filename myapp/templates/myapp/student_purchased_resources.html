@@ -1,0 +1,168 @@
+{% extends 'myapp/base.html' %}
+
+{% block title %}My Purchased Resources{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Back Navigation -->
+    <nav class="mb-4">
+        <a href="{% url 'student_dashboard' %}" class="text-decoration-none text-dark d-inline-flex align-items-center">
+            <i class="fas fa-arrow-left me-2"></i>
+            <span class="fw-medium">Back to Dashboard</span>
+        </a>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold mb-3">
+                <i class="fas fa-shopping-bag me-2 text-primary"></i>
+                My Purchased Resources
+            </h2>
+            
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm bg-gradient-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Premium Resources</h6>
+                                    <h2 class="fw-bold mb-0">{{ total_purchased }}</h2>
+                                </div>
+                                <i class="fas fa-crown fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm bg-gradient-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Free Resources</h6>
+                                    <h2 class="fw-bold mb-0">{{ total_free }}</h2>
+                                </div>
+                                <i class="fas fa-unlock fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchased Resources Section -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-crown me-2"></i>
+                Premium Resources (Purchased)
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if purchased_resources %}
+                <div class="row g-4">
+                    {% for resource in purchased_resources %}
+                    <div class="col-lg-6">
+                        <div class="card border h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="fw-bold text-truncate">{{ resource.title }}</h6>
+                                    <span class="badge bg-success">Purchased</span>
+                                </div>
+                                <p class="text-muted small mb-2">{{ resource.description|truncatewords:20 }}</p>
+                                <div class="text-muted small mb-3">
+                                    <i class="fas fa-user me-1"></i>{{ resource.uploaded_by.get_full_name|default:resource.uploaded_by.username }}
+                                    <i class="fas fa-calendar ms-3 me-1"></i>{{ resource.upload_date|date:"M d, Y" }}
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'resource_detail' resource.id %}" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </a>
+                                    <a href="{% url 'download_resource' resource.id %}" class="btn btn-sm btn-outline-success flex-grow-1">
+                                        <i class="fas fa-download me-1"></i>Download
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Purchased Resources</h5>
+                    <p class="text-muted">You haven't purchased any premium resources yet.</p>
+                    <a href="{% url 'resource_list' %}" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Browse Resources
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Free Resources Section -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-unlock me-2"></i>
+                Free Resources
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if free_resources %}
+                <div class="row g-4">
+                    {% for resource in free_resources %}
+                    <div class="col-lg-6">
+                        <div class="card border h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="fw-bold text-truncate">{{ resource.title }}</h6>
+                                    <span class="badge bg-success">Free</span>
+                                </div>
+                                <p class="text-muted small mb-2">{{ resource.description|truncatewords:20 }}</p>
+                                <div class="text-muted small mb-3">
+                                    <i class="fas fa-user me-1"></i>{{ resource.uploaded_by.get_full_name|default:resource.uploaded_by.username }}
+                                    <i class="fas fa-calendar ms-3 me-1"></i>{{ resource.upload_date|date:"M d, Y" }}
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'resource_detail' resource.id %}" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </a>
+                                    <a href="{% url 'download_resource' resource.id %}" class="btn btn-sm btn-outline-success flex-grow-1">
+                                        <i class="fas fa-download me-1"></i>Download
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No free resources available.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    }
+    
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+    
+    .card {
+        border-radius: 12px;
+    }
+    
+    .card.border {
+        border-color: #e5e7eb !important;
+    }
+</style>
+{% endblock %}

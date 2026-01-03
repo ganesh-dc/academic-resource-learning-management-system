@@ -1,0 +1,190 @@
+{% extends 'myapp/base.html' %}
+
+{% block title %}Create Teacher Account{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-white">
+                    <h4 class="mb-0"><i class="fas fa-chalkboard-teacher me-2"></i> Create Teacher Account</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning mb-4">
+                        <i class="fas fa-shield-alt me-2"></i> 
+                        <strong>Administrator Only</strong><br>
+                        This form creates teacher accounts. Teacher accounts cannot be created through public registration.
+                    </div>
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4">
+                                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="POST" id="teacherForm">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                            <div class="alert alert-danger mb-4">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Please fix these errors:</strong>
+                                <ul class="mb-0 mt-2">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li>{{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Username -->
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Username *</label>
+                            {{ form.username }}
+                            {% if form.username.help_text %}
+                                <div class="form-text">{{ form.username.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label">Email Address *</label>
+                            {{ form.email }}
+                            {% if form.email.help_text %}
+                                <div class="form-text">{{ form.email.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label for="id_password1" class="form-label">Password *</label>
+                            {{ form.password1 }}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Minimum 8 characters. Should not be identical to or contain the username.
+                            </div>
+                        </div>
+                        
+                        <!-- Confirm Password -->
+                        <div class="mb-4">
+                            <label for="id_password2" class="form-label">Confirm Password *</label>
+                            {{ form.password2 }}
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-user-plus me-2"></i> Create Teacher Account
+                            </button>
+                            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Password Tips -->
+            <div class="card shadow mt-4">
+                <div class="card-body">
+                    <h6 class="mb-3">
+                        <i class="fas fa-lightbulb me-2 text-warning"></i>Password Tips
+                    </h6>
+                    <ul class="mb-0 text-muted">
+                        <li>Use at least 8 characters</li>
+                        <li>Include uppercase and lowercase letters</li>
+                        <li>Include numbers or special characters</li>
+                        <li>Avoid using the username or personal information</li>
+                        <li>Example: "Teach@2024" or "Edu@tor123"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-control:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+    border-color: #d39e00;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('teacherForm');
+    const usernameInput = document.getElementById('id_username');
+    const passwordInput = document.getElementById('id_password1');
+    
+    // Real-time validation
+    passwordInput.addEventListener('input', function() {
+        const username = usernameInput.value.toLowerCase();
+        const password = this.value.toLowerCase();
+        
+        if (username && password) {
+            const feedback = document.getElementById('passwordFeedback') || 
+                            document.createElement('div');
+            feedback.id = 'passwordFeedback';
+            feedback.className = 'form-text mt-1';
+            
+            if (password === username) {
+                feedback.innerHTML = '<i class="fas fa-times-circle text-danger me-1"></i> Password is identical to username';
+                feedback.className = 'form-text mt-1 text-danger';
+            } else if (password.includes(username) && username.length > 3) {
+                feedback.innerHTML = '<i class="fas fa-exclamation-triangle text-warning me-1"></i> Password contains username';
+                feedback.className = 'form-text mt-1 text-warning';
+            } else {
+                feedback.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i> Good password choice';
+                feedback.className = 'form-text mt-1 text-success';
+            }
+            
+            if (!document.getElementById('passwordFeedback')) {
+                passwordInput.parentNode.appendChild(feedback);
+            }
+        }
+    });
+    
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+        
+        if (password && username) {
+            if (password.toLowerCase() === username.toLowerCase()) {
+                e.preventDefault();
+                alert('Password cannot be identical to username. Please choose a different password.');
+                passwordInput.focus();
+                return false;
+            }
+            
+            if (password.toLowerCase().includes(username.toLowerCase()) && username.length > 3) {
+                if (!confirm('Password contains your username. This may not be secure. Continue anyway?')) {
+                    e.preventDefault();
+                    passwordInput.focus();
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    });
+});
+</script>
+{% endblock %}

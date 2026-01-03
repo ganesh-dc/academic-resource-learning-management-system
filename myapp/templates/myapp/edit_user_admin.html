@@ -1,0 +1,168 @@
+{% extends 'myapp/base.html' %}
+
+{% block title %}Edit User - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Back Button -->
+            <div class="mb-4">
+                <a href="{% url 'manage_users' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to User Management
+                </a>
+            </div>
+            
+            <!-- Messages -->
+            {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Edit User Card -->
+            <div class="card shadow">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-edit me-2"></i>Edit User: {{ user.username }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Username *</label>
+                                <input type="text" class="form-control" name="username" value="{{ user.username }}" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Email *</label>
+                                <input type="email" class="form-control" name="email" value="{{ user.email }}" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">First Name</label>
+                                <input type="text" class="form-control" name="first_name" value="{{ user.first_name|default:'' }}">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" class="form-control" name="last_name" value="{{ user.last_name|default:'' }}">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Role *</label>
+                                <select class="form-select" name="role" required>
+                                    <option value="student" {% if user.role == 'student' %}selected{% endif %}>Student</option>
+                                    <option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>Teacher</option>
+                                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Account Status</label>
+                                <select class="form-select" name="is_active">
+                                    <option value="true" {% if user.is_active %}selected{% endif %}>Active</option>
+                                    <option value="false" {% if not user.is_active %}selected{% endif %}>Inactive</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Phone</label>
+                                <input type="tel" class="form-control" name="phone" value="{{ user.phone|default:'' }}">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Address</label>
+                                <input type="text" class="form-control" name="address" value="{{ user.address|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <!-- Student Specific Fields -->
+                        <div id="studentFields" style="display: {% if user.role == 'student' %}block{% else %}none{% endif %};">
+                            <h6 class="border-bottom pb-2 mb-3">Student Information</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Student ID</label>
+                                    <input type="text" class="form-control" name="student_id" value="{{ user.student_id|default:'' }}">
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label">Program</label>
+                                    <select class="form-select" name="program">
+                                        <option value="">Select Program</option>
+                                        <option value="BIM" {% if user.program == 'BIM' %}selected{% endif %}>BIM</option>
+                                        <option value="BCA" {% if user.program == 'BCA' %}selected{% endif %}>BCA</option>
+                                        <option value="BBA" {% if user.program == 'BBA' %}selected{% endif %}>BBA</option>
+                                        <option value="BBM" {% if user.program == 'BBM' %}selected{% endif %}>BBM</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label">Semester</label>
+                                    <select class="form-select" name="semester">
+                                        <option value="">Select Semester</option>
+                                        {% for i in "12345678" %}
+                                            <option value="{{ i }}" {% if user.semester == i or user.semester|stringformat:"s" == i %}selected{% endif %}>Semester {{ i }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label">Section</label>
+                                    <input type="text" class="form-control" name="section" value="{{ user.section|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 d-flex justify-content-between">
+                            <a href="{% url 'manage_users' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide student fields based on role selection
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.querySelector('select[name="role"]');
+    const studentFields = document.getElementById('studentFields');
+    
+    function toggleStudentFields() {
+        if (roleSelect.value === 'student') {
+            studentFields.style.display = 'block';
+        } else {
+            studentFields.style.display = 'none';
+            
+            // Optional: Clear student fields when role changes
+            if (roleSelect.value !== 'student') {
+                document.querySelectorAll('#studentFields input, #studentFields select').forEach(field => {
+                    if (field.type !== 'button' && field.type !== 'submit') {
+                        field.value = '';
+                    }
+                });
+            }
+        }
+    }
+    
+    // Initial state
+    toggleStudentFields();
+    
+    // On role change
+    roleSelect.addEventListener('change', toggleStudentFields);
+});
+</script>
+{% endblock %}

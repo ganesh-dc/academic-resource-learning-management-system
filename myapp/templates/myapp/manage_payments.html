@@ -1,0 +1,508 @@
+{% extends 'myapp/base.html' %}
+{% comment %}{% load humanize %}{% endcomment %}
+
+{% block title %}Manage Payments - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h3 mb-2">
+                                <i class="fas fa-money-check-alt text-success"></i> 
+                                Payment Management
+                            </h1>
+                            <p class="text-muted mb-0">
+                                View and manage all payment transactions
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Payments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-receipt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Revenue
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">${{ completed_amount|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Pending Payments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Failed Payments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ failed_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                                <option value="refunded" {% if status_filter == 'refunded' %}selected{% endif %}>Refunded</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label class="form-label">Method</label>
+                            <select name="method" class="form-select">
+                                <option value="">All Methods</option>
+                                <option value="esewa" {% if method_filter == 'esewa' %}selected{% endif %}>eSewa</option>
+                                <option value="imepay" {% if method_filter == 'imepay' %}selected{% endif %}>IME Pay</option>
+                                <option value="demo" {% if method_filter == 'demo' %}selected{% endif %}>Demo</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label class="form-label">From Date</label>
+                            <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label class="form-label">To Date</label>
+                            <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Student, Resource, Transaction ID..." 
+                                   value="{{ search_query }}">
+                        </div>
+                        
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-table"></i> Payment Transactions ({{ total_count }})
+                    </h6>
+                    <div>
+                        <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if method_filter %}method={{ method_filter }}&{% endif %}{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}export=csv" 
+                           class="btn btn-sm btn-outline-success" id="exportCSVBtn">
+                            <i class="fas fa-download"></i> Export CSV
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if payments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered" id="paymentTable">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Student</th>
+                                        <th>Resource</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Method</th>
+                                        <th>Transaction ID</th>
+                                        <th>Date</th>
+                                        <th style="width: 120px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in payments %}
+                                    <tr>
+                                        <td>{{ payment.id }}</td>
+                                        <td>
+                                            <a href="{% url 'view_profile' payment.student.id %}" class="text-decoration-none">
+                                                {{ payment.student.username }}
+                                            </a>
+                                            <br>
+                                            <small class="text-muted">{{ payment.student.email }}</small>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'resource_detail' payment.resource.id %}" class="text-decoration-none">
+                                                {{ payment.resource.title|truncatechars:30 }}
+                                            </a>
+                                            <br>
+                                            <small class="text-muted">By: {{ payment.resource.uploaded_by.username }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold">${{ payment.amount }}</span>
+                                        </td>
+                                        <td>
+                                            {% if payment.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif payment.status == 'pending' %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% elif payment.status == 'failed' %}
+                                                <span class="badge bg-danger">Failed</span>
+                                            {% elif payment.status == 'refunded' %}
+                                                <span class="badge bg-info">Refunded</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ payment.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if payment.payment_method == 'esewa' %}
+                                                <span class="badge bg-primary">eSewa</span>
+                                            {% elif payment.payment_method == 'imepay' %}
+                                                <span class="badge bg-warning">IME Pay</span>
+                                            {% elif payment.payment_method == 'demo' %}
+                                                <span class="badge bg-info">Demo</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ payment.payment_method }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ payment.transaction_id|truncatechars:15 }}</small>
+                                        </td>
+                                        <td>{{ payment.payment_date|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button type="button" class="btn btn-outline-info" 
+                                                        onclick="showPaymentDetails({{ payment.id }})"
+                                                        data-bs-toggle="tooltip" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-warning" 
+                                                        onclick="showUpdateModal({{ payment.id }}, '{{ payment.status }}')"
+                                                        data-bs-toggle="tooltip" title="Update Status">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-money-bill-wave fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Payment Records Found</h5>
+                            <p class="text-muted">Try adjusting your filter criteria</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Details Modal -->
+<div class="modal fade" id="paymentDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Payment Details - ID: <span id="paymentId"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="paymentDetailsContent">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading payment details...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Payment Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="updateStatusForm" method="POST" action="">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="payment_id" id="updatePaymentId">
+                    <div class="mb-3">
+                        <label class="form-label">Current Status: <span id="currentStatus" class="badge"></span></label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New Status</label>
+                        <select class="form-select" name="status" id="statusSelect" required>
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                            <option value="refunded">Refunded</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason (Optional)</label>
+                        <textarea class="form-control" name="reason" rows="2" placeholder="Enter reason for status change..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.table-hover tbody tr:hover {
+    background-color: rgba(40,167,69,.075);
+}
+
+.badge {
+    font-size: 0.8em;
+    padding: 0.35em 0.65em;
+}
+
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px !important;
+}
+
+.btn-group {
+    display: flex;
+    gap: 2px;
+}
+
+.action-buttons {
+    min-width: 100px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+    
+    // CSV Export confirmation
+    const exportBtn = document.getElementById('exportCSVBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function(e) {
+            if (!confirm('Export payment data to CSV file?\n\nThis will download filtered payment data.')) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+
+function showPaymentDetails(paymentId) {
+    // Set payment ID in modal title
+    document.getElementById('paymentId').textContent = paymentId;
+    
+    // Show loading state
+    document.getElementById('paymentDetailsContent').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading payment details...</p>
+        </div>
+    `;
+    
+    // Fetch payment details via AJAX
+    fetch(`/api/payment-details/${paymentId}/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const payment = data.payment;
+                const detailsHtml = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Payment Information</h6>
+                            <p><strong>Payment ID:</strong> ${payment.id}</p>
+                            <p><strong>Transaction ID:</strong> ${payment.transaction_id || 'N/A'}</p>
+                            <p><strong>Amount:</strong> $${payment.amount}</p>
+                            <p><strong>Status:</strong> <span class="badge ${getStatusBadgeClass(payment.status)}">${payment.status}</span></p>
+                            <p><strong>Method:</strong> ${payment.payment_method}</p>
+                            <p><strong>Date:</strong> ${new Date(payment.payment_date).toLocaleString()}</p>
+                            ${payment.esewa_ref_id ? `<p><strong>eSewa Ref ID:</strong> ${payment.esewa_ref_id}</p>` : ''}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Student Information</h6>
+                            <p><strong>Username:</strong> ${payment.student.username}</p>
+                            <p><strong>Email:</strong> ${payment.student.email}</p>
+                            <p><strong>Student ID:</strong> ${payment.student.student_id || 'N/A'}</p>
+                            <p><strong>Full Name:</strong> ${payment.student.full_name || payment.student.username}</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Resource Information</h6>
+                            <p><strong>Resource ID:</strong> ${payment.resource.id}</p>
+                            <p><strong>Title:</strong> ${payment.resource.title}</p>
+                            <p><strong>Description:</strong> ${payment.resource.description || 'No description'}</p>
+                            <p><strong>Type:</strong> ${payment.resource.is_premium ? 'Premium' : 'Free'}</p>
+                            <p><strong>Price:</strong> $${payment.resource.price}</p>
+                            <p><strong>Uploaded by:</strong> ${payment.resource.uploaded_by.username} (${payment.resource.uploaded_by.email})</p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('paymentDetailsContent').innerHTML = detailsHtml;
+            } else {
+                document.getElementById('paymentDetailsContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error: ${data.error || 'Unknown error occurred'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching payment details:', error);
+            document.getElementById('paymentDetailsContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error: Could not load payment details. Please check:
+                    <ul class="mt-2 mb-0">
+                        <li>Make sure the payment details API endpoint exists</li>
+                        <li>Check your internet connection</li>
+                        <li>Try refreshing the page</li>
+                    </ul>
+                </div>
+            `;
+        });
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('paymentDetailsModal'));
+    modal.show();
+}
+
+function showUpdateModal(paymentId, currentStatus) {
+    document.getElementById('updatePaymentId').value = paymentId;
+    
+    // Update current status display
+    const currentStatusElement = document.getElementById('currentStatus');
+    currentStatusElement.textContent = currentStatus;
+    currentStatusElement.className = 'badge ' + getStatusBadgeClass(currentStatus);
+    
+    // Set form action to your update_payment_status URL
+    document.getElementById('updateStatusForm').action = `/update-payment-status/${paymentId}/`;
+    
+    // Set current status as selected in dropdown
+    document.getElementById('statusSelect').value = currentStatus;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('updateStatusModal'));
+    modal.show();
+}
+
+function getStatusBadgeClass(status) {
+    switch(status) {
+        case 'completed': return 'bg-success';
+        case 'pending': return 'bg-warning';
+        case 'failed': return 'bg-danger';
+        case 'refunded': return 'bg-info';
+        default: return 'bg-secondary';
+    }
+}
+
+// Handle update status form submission
+document.getElementById('updateStatusForm').addEventListener('submit', function(e) {
+    // Form will submit normally (no AJAX needed since your view handles it)
+    if (!confirm('Are you sure you want to update the payment status?\n\nThis action cannot be undone.')) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

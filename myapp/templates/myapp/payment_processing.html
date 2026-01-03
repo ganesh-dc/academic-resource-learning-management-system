@@ -1,0 +1,161 @@
+{% extends 'myapp/base.html' %}
+{% block title %}Processing Payment - ARLMS{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="background-color: #f8fafc; min-height: 100vh;">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <!-- Progress Steps -->
+      <div class="d-flex align-items-center justify-content-center mb-5">
+        <div class="step completed">
+          <div class="step-circle">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="step-label">Select Resource</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step completed">
+          <div class="step-circle">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="step-label">Payment Method</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step active">
+          <div class="step-circle">3</div>
+          <span class="step-label">Complete</span>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0" style="border-radius: 12px; border: 1px solid #e5e7eb;">
+        <div class="card-body p-5 text-center">
+          <!-- Loading Animation -->
+          <div class="mb-4">
+            <div class="spinner-border text-primary" style="width: 60px; height: 60px;" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          
+          <h3 class="fw-bold mb-3" style="color: #1f2937;">Processing Your Payment</h3>
+          <p class="text-muted mb-4">
+            Please wait while we connect to the payment gateway...
+          </p>
+          
+          <!-- Payment Info -->
+          <div class="card border mb-4" style="background-color: #f8fafc; border-color: #e5e7eb;">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-6">
+                  <small class="text-muted d-block">Resource</small>
+                  <strong>{{ resource.title|truncatechars:20 }}</strong>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block">Amount</small>
+                  <strong class="text-primary">Rs {{ resource.price }}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Instructions -->
+          <div class="alert alert-info mb-4">
+            <div class="d-flex align-items-start">
+              <i class="fas fa-info-circle mt-1 me-3"></i>
+              <div class="text-start">
+                <strong>Please do not close this window</strong>
+                <p class="mb-0 small mt-1">
+                  You will be redirected to complete the payment. Stay on this page until redirected.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Auto redirect message -->
+          <div class="mt-4">
+            <p class="text-muted small">
+              <i class="fas fa-sync-alt me-1"></i>
+              Redirecting in <span id="countdown">3</span> seconds...
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.step {
+  text-align: center;
+  min-width: 120px;
+}
+
+.step-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  font-weight: bold;
+}
+
+.step.completed .step-circle {
+  background-color: #10b981;
+  color: white;
+}
+
+.step.active .step-circle {
+  background-color: #4f46e5;
+  color: white;
+}
+
+.step-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.step.active .step-label {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.step.completed .step-label {
+  color: #10b981;
+}
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background-color: #e5e7eb;
+  margin: 20px 10px 0;
+}
+
+.card {
+  border-radius: 12px;
+}
+
+.spinner-border {
+  border-width: 3px;
+}
+</style>
+
+<script>
+// Auto redirect after 3 seconds
+let seconds = 3;
+const countdownEl = document.getElementById('countdown');
+
+const countdown = setInterval(() => {
+  seconds--;
+  countdownEl.textContent = seconds;
+  
+  if (seconds <= 0) {
+    clearInterval(countdown);
+    // Redirect to payment success
+    window.location.href = "{% url 'payment_success' payment.id %}";
+  }
+}, 1000);
+</script>
+{% endblock %}

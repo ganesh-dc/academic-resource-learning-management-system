@@ -1,0 +1,963 @@
+{% extends 'myapp/base.html' %}
+
+{% block title %}Teacher Dashboard - ARLMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Dashboard Header - Only Upload button -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="dashboard-header">
+                <div class="header-content">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="dashboard-title">
+                                <i class="fas fa-chalkboard-teacher text-primary me-2"></i>
+                                Teacher Dashboard
+                            </h1>
+                            <p class="dashboard-subtitle">
+                                Welcome back, <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>!
+                            </p>
+                        </div>
+                        <div class="dashboard-actions">
+                            <!-- ONLY Upload button in header -->
+                            <a href="{% url 'upload_resource' %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-upload me-2"></i>Upload Resource
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="stats-overview">
+                <div class="row g-4">
+                    <!-- Total Resources -->
+                    <div class="col-xl-3 col-lg-6">
+                        <div class="stat-card card-hover" onclick="window.location='{% url 'my_resources' %}'" style="cursor: pointer;">
+                            <div class="stat-icon">
+                                <i class="fas fa-book-open text-primary"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>{{ resource_count|default:0 }}</h3>
+                                <p>Total Resources</p>
+                            </div>
+                            <div class="stat-action">
+                                <a href="{% url 'my_resources' %}" class="text-primary">
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Downloads -->
+                    <div class="col-xl-3 col-lg-6">
+                        <div class="stat-card card-hover">
+                            <div class="stat-icon">
+                                <i class="fas fa-download text-success"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>{{ total_downloads|default:0 }}</h3>
+                                <p>Total Downloads</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Unread Notifications -->
+                    <div class="col-xl-3 col-lg-6">
+                        <div class="stat-card card-hover" onclick="window.location='#notifications'" style="cursor: pointer;">
+                            <div class="stat-icon">
+                                <i class="fas fa-bell {% if unread_count > 0 %}text-warning{% else %}text-secondary{% endif %}"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>{{ unread_count|default:0 }}</h3>
+                                <p>Unread Notifications</p>
+                                {% if unread_count > 0 %}
+                                <span class="badge bg-danger pulse">New</span>
+                                {% endif %}
+                            </div>
+                            <div class="stat-action">
+                                <a href="#notifications" class="text-warning">
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Feedback Received -->
+                    <div class="col-xl-3 col-lg-6">
+                        <div class="stat-card card-hover">
+                            <div class="stat-icon">
+                                <i class="fas fa-comments text-info"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>{{ resource_feedbacks|length|default:0 }}</h3>
+                                <p>Feedback Received</p>
+                            </div>
+                            <div class="stat-action">
+                                <a href="#feedback" class="text-info">
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Content -->
+    <div class="row g-4">
+        <!-- Left Column: Resources Overview -->
+        <div class="col-lg-8">
+            <!-- Resources Section -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3>
+                            <i class="fas fa-file-alt me-2 text-primary"></i>
+                            Recent Resources
+                        </h3>
+                        <div class="resource-filters">
+                            <select class="form-select form-select-sm w-auto d-inline-block" onchange="filterResources(this.value)">
+                                <option value="all">All Resources</option>
+                                <option value="premium">Premium</option>
+                                <option value="free">Free</option>
+                                <option value="recent">Recent</option>
+                            </select>
+                            <a href="{% url 'my_resources' %}" class="btn btn-sm btn-outline-primary ms-2">
+                                <i class="fas fa-list"></i> Manage All
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-body">
+                    {% if my_resources %}
+                        <div class="table-responsive">
+                            <table class="table table-hover resource-table">
+                                <thead>
+                                    <tr>
+                                        <th>Resource</th>
+                                        <th class="text-center">Type</th>
+                                        <th class="text-center">Views</th>
+                                        <th class="text-center">Downloads</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resource in my_resources|slice:":10" %}
+                                    <tr class="resource-row" data-type="{% if resource.is_premium %}premium{% else %}free{% endif %}" data-date="{{ resource.uploaded_date|date:'U' }}">
+                                        <td>
+                                            <div class="resource-info">
+                                                <div class="resource-title">
+                                                    <a href="{% url 'resource_detail' resource.id %}" class="text-decoration-none">
+                                                        <i class="fas fa-file me-2"></i>
+                                                        {{ resource.title|truncatechars:40 }}
+                                                    </a>
+                                                </div>
+                                                {% if resource.subject or resource.grade_level %}
+                                                <small class="text-muted">
+                                                    {% if resource.subject %}{{ resource.subject }}{% endif %}
+                                                    {% if resource.subject and resource.grade_level %} • {% endif %}
+                                                    {% if resource.grade_level %}{{ resource.grade_level }}{% endif %}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if resource.is_premium %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-crown me-1"></i>Premium
+                                            </span>
+                                            {% else %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-unlock me-1"></i>Free
+                                            </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info">{{ resource.views|default:0 }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary">{{ resource.download_count|default:0 }}</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ resource.uploaded_date|date:"M d, Y" }}</small>
+                                        </td>
+                                        <td>
+                                            <!-- UPDATED: Only View and Download buttons -->
+                                            <div class="action-buttons">
+                                                <a href="{% url 'resource_detail' resource.id %}" class="btn btn-sm btn-outline-info" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'download_resource' resource.id %}" class="btn btn-sm btn-outline-success" title="Download">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Management Note -->
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> To edit or delete a resource, click the <i class="fas fa-eye text-info"></i> View button. 
+                            Edit and Delete options are available on the resource details page for owners.
+                        </div>
+                        <div class="section-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Showing {{ my_resources|slice:":10"|length }} of {{ resource_count|default:0 }} resources</small>
+                                <a href="{% url 'my_resources' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-external-link-alt me-1"></i> View & Manage All Resources
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-folder-open fa-4x text-muted"></i>
+                            </div>
+                            <h4>No Resources Yet</h4>
+                            <p class="text-muted">You haven't uploaded any teaching resources yet.</p>
+                            <a href="{% url 'upload_resource' %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-upload me-2"></i>Upload Your First Resource
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Resource Summary Cards -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card card-hover">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-pie me-2 text-success"></i>
+                                Resource Types
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h4 class="text-warning">{{ premium_count|default:0 }}</h4>
+                                    <small class="text-muted">Premium Resources</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-success">{{ free_count|default:0 }}</h4>
+                                    <small class="text-muted">Free Resources</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card card-hover">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-star me-2 text-warning"></i>
+                                Resource Ratings
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                {% if avg_rating %}
+                                    <h4 class="text-warning">{{ avg_rating|floatformat:1 }}/5.0</h4>
+                                    <div class="rating-stars justify-content-center">
+                                        {% for i in "12345" %}
+                                        <i class="fas fa-star {% if forloop.counter <= avg_rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                        {% endfor %}
+                                    </div>
+                                    <small class="text-muted">Average Rating</small>
+                                {% else %}
+                                    <h4 class="text-muted">N/A</h4>
+                                    <small class="text-muted">No ratings yet</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Notifications & Feedback -->
+        <div class="col-lg-4">
+            <!-- Notifications Section - UPDATED with dynamic icons -->
+            <div class="dashboard-section" id="notifications">
+                <div class="section-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3>
+                            <i class="fas fa-bell me-2 text-warning"></i>
+                            Recent Notifications
+                            {% if unread_count > 0 %}
+                            <span class="badge bg-danger ms-2">{{ unread_count }} new</span>
+                            {% endif %}
+                        </h3>
+                        {% if unread_count > 0 and recent_notifications %}
+                        <div class="notification-actions">
+                            <!-- Simple link for Mark all read -->
+                            <a href="{% url 'mark_notification_read' 0 %}?mark_all=true" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-check-double"></i> Mark all read
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="section-body">
+                    {% if recent_notifications %}
+                        <div class="notification-list">
+                            {% for notification in recent_notifications|slice:":5" %}
+                            <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                                <div class="notification-icon">
+                                    <!-- Dynamic icon based on notification content -->
+                                    {% if notification.get_icon %}
+                                        <i class="fas {{ notification.get_icon }} {{ notification.get_color }}"></i>
+                                    {% else %}
+                                        {% if 'feedback' in notification.message|lower or 'rating' in notification.message|lower %}
+                                            <i class="fas fa-comment text-warning"></i>
+                                        {% elif 'download' in notification.message|lower %}
+                                            <i class="fas fa-download text-success"></i>
+                                        {% elif 'purchase' in notification.message|lower or 'purchased' in notification.message|lower %}
+                                            <i class="fas fa-shopping-cart text-primary"></i>
+                                        {% elif 'payment' in notification.message|lower %}
+                                            <i class="fas fa-credit-card text-info"></i>
+                                        {% else %}
+                                            <i class="fas fa-bell text-secondary"></i>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <div class="notification-content">
+                                    <p class="mb-1">{{ notification.message|truncatechars:60 }}</p>
+                                    <small class="text-muted">
+                                        {{ notification.created_at|timesince }} ago
+                                        {% if notification.sender %}
+                                        • From: {{ notification.sender.username }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                {% if not notification.is_read %}
+                                <div class="notification-status">
+                                    <a href="{% url 'mark_notification_read' notification.id %}" class="btn btn-sm btn-link p-0" title="Mark as read">
+                                        <span class="badge bg-danger">New</span>
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-bell-slash fa-3x text-muted"></i>
+                            </div>
+                            <h5>No Notifications</h5>
+                            <p class="text-muted">You're all caught up!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Feedback Section -->
+            <div class="dashboard-section mt-4" id="feedback">
+                <div class="section-header">
+                    <h3>
+                        <i class="fas fa-comment-dots me-2 text-info"></i>
+                        Recent Feedback
+                    </h3>
+                </div>
+                
+                <div class="section-body">
+                    {% if resource_feedbacks %}
+                        <div class="feedback-list">
+                            {% for feedback in resource_feedbacks|slice:":3" %}
+                            <div class="feedback-item">
+                                <div class="feedback-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">
+                                            <a href="{% url 'resource_detail' feedback.resource.id %}" class="text-decoration-none">
+                                                {{ feedback.resource.title|truncatechars:25 }}
+                                            </a>
+                                        </h6>
+                                        <div class="rating-stars">
+                                            {% for i in "12345" %}
+                                            <i class="fas fa-star {% if forloop.counter <= feedback.rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="feedback-body">
+                                    <p class="mb-2">{{ feedback.message|truncatechars:80 }}</p>
+                                </div>
+                                <div class="feedback-footer">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>{{ feedback.user.username }}
+                                        <i class="fas fa-clock ms-3 me-1"></i>{{ feedback.created_at|timesince }} ago
+                                    </small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if resource_feedbacks|length > 3 %}
+                        <div class="section-footer">
+                            <button type="button" class="btn btn-sm btn-outline-info w-100" data-bs-toggle="modal" data-bs-target="#allFeedbackModal">
+                                <i class="fas fa-comments me-1"></i> View All Feedback
+                            </button>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-comment-slash fa-3x text-muted"></i>
+                            </div>
+                            <h5>No Feedback Yet</h5>
+                            <p class="text-muted">Your resources haven't received feedback yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions - Only 2 buttons -->
+            <div class="card card-hover mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt me-2 text-primary"></i>
+                        Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="{% url 'upload_resource' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-upload me-1"></i>Upload
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{% url 'my_resources' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-folder me-1"></i>All Resources
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- All Feedback Modal -->
+<div class="modal fade" id="allFeedbackModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">All Feedback Received</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% if resource_feedbacks %}
+                    <div class="feedback-list">
+                        {% for feedback in resource_feedbacks %}
+                        <div class="feedback-item mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">
+                                    <a href="{% url 'resource_detail' feedback.resource.id %}" class="text-decoration-none">
+                                        {{ feedback.resource.title }}
+                                    </a>
+                                </h6>
+                                <div class="rating-stars">
+                                    {% for i in "12345" %}
+                                    <i class="fas fa-star {% if forloop.counter <= feedback.rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <p class="mb-2">{{ feedback.message }}</p>
+                            <small class="text-muted">
+                                By {{ feedback.user.username }} on {{ feedback.created_at|date:"M d, Y" }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted py-4">No feedback available</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Resource filtering function
+function filterResources(filterType) {
+    const rows = document.querySelectorAll('.resource-row');
+    const now = Math.floor(Date.now() / 1000);
+    const oneWeekAgo = now - (7 * 24 * 60 * 60); // 7 days in seconds
+    
+    rows.forEach(row => {
+        const resourceType = row.getAttribute('data-type');
+        const resourceDate = parseInt(row.getAttribute('data-date'));
+        
+        switch(filterType) {
+            case 'premium':
+                row.style.display = resourceType === 'premium' ? '' : 'none';
+                break;
+            case 'free':
+                row.style.display = resourceType === 'free' ? '' : 'none';
+                break;
+            case 'recent':
+                // Show only resources from last 7 days
+                row.style.display = resourceDate >= oneWeekAgo ? '' : 'none';
+                break;
+            default:
+                row.style.display = '';
+        }
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Add smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            if (targetId !== '#') {
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }
+        });
+    });
+    
+    // Initialize tooltips if Bootstrap is available
+    if (typeof bootstrap !== 'undefined') {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+    
+    // Auto-refresh notifications every 30 seconds
+    setInterval(function() {
+        const notificationCount = document.querySelector('.notification-list');
+        if (notificationCount) {
+            fetch(window.location.href)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newNotifications = doc.querySelector('.notification-list');
+                    const currentNotifications = document.querySelector('.notification-list');
+                    
+                    if (newNotifications && currentNotifications && newNotifications.innerHTML !== currentNotifications.innerHTML) {
+                        location.reload(); // Simple reload if notifications changed
+                    }
+                })
+                .catch(error => console.log('Auto-refresh error:', error));
+        }
+    }, 30000); // 30 seconds
+});
+</script>
+
+<style>
+/* Dashboard Styling */
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.dashboard-title {
+    color: white;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+}
+
+.dashboard-subtitle {
+    color: rgba(255,255,255,0.9);
+    font-size: 1.1rem;
+}
+
+/* Stat Cards */
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid #eef1f6;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.stat-icon i {
+    font-size: 1.5rem;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-content h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    line-height: 1;
+}
+
+.stat-content p {
+    color: #6c757d;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.stat-action a {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+    text-decoration: none;
+}
+
+.stat-action a:hover {
+    opacity: 1;
+}
+
+/* Dashboard Sections */
+.dashboard-section {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+}
+
+.section-header {
+    background: #f8f9fa;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #eef1f6;
+}
+
+.section-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: #2c3e50;
+}
+
+.section-body {
+    padding: 1.5rem;
+}
+
+.section-footer {
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+    border-top: 1px solid #eef1f6;
+}
+
+/* Resource Table */
+.resource-table th {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    padding: 1rem 0.75rem;
+    background: #f8f9fa;
+}
+
+.resource-table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-color: #eef1f6;
+}
+
+.resource-info .resource-title a {
+    color: #2c3e50;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    text-decoration: none;
+}
+
+.resource-info .resource-title a:hover {
+    color: #667eea;
+}
+
+.action-buttons .btn {
+    padding: 0.25rem 0.5rem;
+    margin: 0 2px;
+    font-size: 0.875rem;
+}
+
+.action-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Notifications */
+.notification-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.notification-item:hover {
+    background: #e9ecef;
+    transform: translateX(3px);
+}
+
+.notification-item.unread {
+    background: #fff8e6;
+    border-left-color: #ffc107;
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-content p {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.notification-status {
+    margin-left: 0.5rem;
+}
+
+.notification-status .badge {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.notification-status .badge:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+/* Feedback */
+.feedback-item {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background: #f8f9fa;
+    border: 1px solid #eef1f6;
+    transition: all 0.3s ease;
+}
+
+.feedback-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.feedback-header h6 a {
+    color: #2c3e50;
+    transition: color 0.3s ease;
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.feedback-header h6 a:hover {
+    color: #667eea;
+}
+
+.rating-stars {
+    font-size: 0.8rem;
+    display: flex;
+}
+
+.rating-stars.justify-content-center {
+    justify-content: center;
+}
+
+.feedback-body p {
+    color: #495057;
+    margin: 0.5rem 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.feedback-footer small {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.empty-icon {
+    margin-bottom: 1rem;
+    color: #dee2e6;
+}
+
+.empty-state h4, .empty-state h5 {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: #adb5bd;
+    margin-bottom: 1.5rem;
+}
+
+/* Animations */
+.card-hover {
+    transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Quick Actions */
+.quick-actions .btn {
+    transition: all 0.3s ease;
+    border-width: 2px;
+}
+
+.quick-actions .btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Scrollbar Styling */
+.notification-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.notification-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.notification-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.notification-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-header {
+        padding: 1.5rem;
+    }
+    
+    .dashboard-title {
+        font-size: 1.5rem;
+    }
+    
+    .dashboard-actions .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .resource-filters {
+        margin-top: 1rem;
+        width: 100%;
+    }
+    
+    .resource-filters select {
+        width: 100% !important;
+    }
+    
+    .action-buttons .btn {
+        margin: 0 1px;
+        padding: 0.25rem 0.35rem;
+        font-size: 0.75rem;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        margin-right: 0.75rem;
+    }
+    
+    .stat-content h3 {
+        font-size: 1.5rem;
+    }
+    
+    .quick-actions .col-6 {
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends 'myapp/base.html' %}
+{% load static %}
+
+{% block title %}Upload Resource - ARLMS{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-upload"></i> Upload New Resource
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_title" class="form-label">
+                                <i class="fas fa-heading"></i> Resource Title *
+                            </label>
+                            <input type="text" 
+                                   class="form-control {% if form.title.errors %}is-invalid{% endif %}" 
+                                   id="id_title" 
+                                   name="title" 
+                                   value="{{ form.title.value|default:'' }}"
+                                   placeholder="Enter resource title"
+                                   required>
+                            {% if form.title.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.title.errors|join:", " }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">
+                                <i class="fas fa-align-left"></i> Description *
+                            </label>
+                            <textarea class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
+                                      id="id_description" 
+                                      name="description" 
+                                      rows="4"
+                                      placeholder="Describe your resource..."
+                                      required>{{ form.description.value|default:'' }}</textarea>
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.description.errors|join:", " }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_category" class="form-label">
+                                <i class="fas fa-tag"></i> Category
+                            </label>
+                            <select class="form-select {% if form.category.errors %}is-invalid{% endif %}" 
+                                    id="id_category" 
+                                    name="category">
+                                <option value="">Select Category (Optional)</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" 
+                                            {% if form.category.value == category.id|stringformat:"i" %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.category.errors|join:", " }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_file" class="form-label">
+                                <i class="fas fa-file"></i> File *
+                            </label>
+                            <input type="file" 
+                                   class="form-control {% if form.file.errors %}is-invalid{% endif %}" 
+                                   id="id_file" 
+                                   name="file"
+                                   accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.rar,.jpg,.jpeg,.png,.mp4,.mp3"
+                                   required>
+                            <div class="form-text">
+                                Allowed formats: PDF, Word, PowerPoint, Text, Images, Videos, Audio, ZIP
+                            </div>
+                            {% if form.file.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.file.errors|join:", " }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           id="id_is_premium" 
+                                           name="is_premium"
+                                           {% if form.is_premium.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_is_premium">
+                                        <i class="fas fa-crown text-warning"></i> Premium Resource
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div id="priceField" style="display: none;">
+                                    <label for="id_price" class="form-label">
+                                        <i class="fas fa-rupee-sign"></i> Price
+                                    </label>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="id_price" 
+                                           name="price" 
+                                           value="{{ form.price.value|default:'0' }}"
+                                           step="0.01"
+                                           min="0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-upload"></i> Upload Resource
+                            </button>
+                            <a href="{% url 'my_resources' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-muted">
+                    <small>
+                        <i class="fas fa-info-circle"></i> 
+                        Max file size: 50MB. Your resource will be reviewed before publishing.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for premium toggle -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const premiumCheckbox = document.getElementById('id_is_premium');
+    const priceField = document.getElementById('priceField');
+    
+    function togglePriceField() {
+        if (premiumCheckbox.checked) {
+            priceField.style.display = 'block';
+            document.getElementById('id_price').required = true;
+        } else {
+            priceField.style.display = 'none';
+            document.getElementById('id_price').required = false;
+        }
+    }
+    
+    // Initial state
+    togglePriceField();
+    
+    // Add event listener
+    premiumCheckbox.addEventListener('change', togglePriceField);
+    
+    // File size validation
+    const fileInput = document.getElementById('id_file');
+    const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+    
+    fileInput.addEventListener('change', function() {
+        if (this.files[0] && this.files[0].size > maxSize) {
+            alert('File size exceeds 50MB limit. Please choose a smaller file.');
+            this.value = '';
+        }
+    });
+    
+    // Form submission
+    const form = document.getElementById('uploadForm');
+    form.addEventListener('submit', function(e) {
+        if (!fileInput.files.length) {
+            alert('Please select a file to upload.');
+            e.preventDefault();
+            return false;
+        }
+        
+        const file = fileInput.files[0];
+        if (file.size > maxSize) {
+            alert('File size exceeds 50MB limit. Please choose a smaller file.');
+            e.preventDefault();
+            return false;
+        }
+        
+        return true;
+    });
+});
+</script>
+
+<style>
+.card {
+    border-radius: 10px;
+    border: none;
+}
+
+.card-header {
+    border-top-left-radius: 10px !important;
+    border-top-right-radius: 10px !important;
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 1.1rem;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #ffc107;
+    border-color: #ffc107;
+}
+</style>
+{% endblock %}

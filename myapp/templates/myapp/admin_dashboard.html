@@ -1,0 +1,352 @@
+{% extends 'myapp/base.html' %}
+
+{% block title %}Admin Dashboard - ARLMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Dashboard Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h3 mb-2">
+                                <i class="fas fa-cogs text-danger"></i> 
+                                Admin Dashboard
+                            </h1>
+                            <p class="text-muted mb-0">
+                                System Administration & Monitoring
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <!-- ONLY CHANGE MADE: Replaced Database Admin with Add Category -->
+                            <a href="{% url 'add_category' %}" class="btn btn-outline-success ms-2">
+                                <i class="fas fa-plus"></i> Add Category
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Row -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Users
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_users }}
+                            </div>
+                            <div class="mt-2">
+                                <span class="badge bg-primary">Students: {{ student_count }}</span>
+                                <span class="badge bg-info ms-1">Teachers: {{ teacher_count }}</span>
+                                <span class="badge bg-danger ms-1">Admins: {{ admin_count }}</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Resources
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_resources }}
+                            </div>
+                            <div class="mt-2">
+                                <span class="badge bg-warning">Premium: {{ premium_count }}</span>
+                                <span class="badge bg-success ms-1">Free: {{ free_count }}</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-book fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Revenue
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                ${{ total_revenue|floatformat:2 }}
+                            </div>
+                            <div class="mt-2">
+                                <span class="text-success">
+                                    <i class="fas fa-arrow-up"></i> Today: ${{ today_revenue|floatformat:2 }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Today's Activity
+                            </div>
+                            <div class="row no-gutters align-items-center">
+                                <div class="col-auto">
+                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">
+                                        {{ today_users }} Users
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="text-xs">
+                                        {{ today_resources }} Resources • {{ today_payments }} Payments
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="badge bg-primary">+{{ new_users_week|default:"0" }} users this week</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-cog"></i> User Management
+                    </h6>
+                    <a href="{% url 'manage_users' %}" class="btn btn-sm btn-primary">Manage All</a>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="h4">{{ total_users }}</div>
+                        <small class="text-muted">Total Registered Users</small>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h5 text-primary">{{ student_count }}</div>
+                            <small>Students</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h5 text-info">{{ teacher_count }}</div>
+                            <small>Teachers</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h5 text-danger">{{ admin_count }}</div>
+                            <small>Admins</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6>Recent Users</h6>
+                    <div class="list-group">
+                        {% for user in recent_users|slice:":5" %}
+                        <div class="list-group-item list-group-item-action border-0 py-2">
+                            <div class="d-flex w-100 justify-content-between">
+                                <div>
+                                    <strong>{{ user.username }}</strong>
+                                    <small class="d-block text-muted">{{ user.email }}</small>
+                                </div>
+                                <span class="badge {% if user.role == 'student' %}bg-primary{% elif user.role == 'teacher' %}bg-info{% else %}bg-danger{% endif %}">
+                                    {{ user.role }}
+                                </span>
+                            </div>
+                            <small class="text-muted">
+                                Joined {{ user.date_joined|timesince }} ago
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-book"></i> Resource Management
+                    </h6>
+                    <a href="{% url 'manage_resources' %}" class="btn btn-sm btn-success">Manage All</a>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="h4">{{ total_resources }}</div>
+                        <small class="text-muted">Total Resources</small>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h5 text-warning">{{ premium_count }}</div>
+                            <small>Premium</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h5 text-success">{{ free_count }}</div>
+                            <small>Free</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6>Recent Resources</h6>
+                    <div class="list-group">
+                        {% for resource in recent_resources|slice:":5" %}
+                        <div class="list-group-item list-group-item-action border-0 py-2">
+                            <div class="d-flex w-100 justify-content-between">
+                                <div>
+                                    <strong>{{ resource.title|truncatechars:25 }}</strong>
+                                    <small class="d-block text-muted">By {{ resource.uploaded_by.username }}</small>
+                                </div>
+                                <span class="badge {% if resource.is_premium %}bg-warning{% else %}bg-success{% endif %}">
+                                    {% if resource.is_premium %}Premium{% else %}Free{% endif %}
+                                </span>
+                            </div>
+                            <small class="text-muted">
+                                {{ resource.views }} views • {{ resource.uploaded_date|timesince }} ago
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-credit-card"></i> Payment Management
+                    </h6>
+                    <a href="{% url 'manage_payments' %}" class="btn btn-sm btn-info">Manage All</a>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="h4">${{ total_revenue|floatformat:2 }}</div>
+                        <small class="text-muted">Total Revenue</small>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h5 text-success">{{ total_payments }}</div>
+                            <small>Total Payments</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h5 text-danger">{{ today_payments }}</div>
+                            <small>Today</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6>Recent Payments</h6>
+                    <div class="list-group">
+                        {% for payment in recent_payments|slice:":5" %}
+                        <div class="list-group-item list-group-item-action border-0 py-2">
+                            <div class="d-flex w-100 justify-content-between">
+                                <div>
+                                    <strong>{{ payment.resource.title|truncatechars:20 }}</strong>
+                                    <small class="d-block text-muted">By {{ payment.student.username }}</small>
+                                </div>
+                                <span class="badge bg-success">${{ payment.amount }}</span>
+                            </div>
+                            <small class="text-muted">
+                                {{ payment.payment_method|title }} • {{ payment.payment_date|timesince }} ago
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    </div>
+
+    
+<!-- Add Custom CSS -->
+<style>
+.card {
+    border-radius: 10px;
+    border: none;
+}
+
+.card-header {
+    border-top-left-radius: 10px !important;
+    border-top-right-radius: 10px !important;
+    border-bottom: 1px solid #eee;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+
+.text-gray-300 {
+    color: #dddfeb !important;
+}
+
+.font-weight-bold {
+    font-weight: 700 !important;
+}
+
+.text-xs {
+    font-size: .7rem;
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(3px);
+    transition: all 0.3s ease;
+}
+</style>
+
+<!-- Add Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}

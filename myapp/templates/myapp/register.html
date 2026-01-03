@@ -1,0 +1,721 @@
+{% extends 'myapp/base.html' %}
+{% block title %}Student Registration - ARLMS{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+    .error-message {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+        display: none;
+    }
+    
+    .form-control.is-invalid, .form-select.is-invalid {
+        border-color: #dc3545;
+    }
+    
+    .password-toggle {
+        cursor: pointer;
+    }
+    
+    .form-hint {
+        color: #6c757d;
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+        display: block;
+    }
+    
+    .server-error {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+    }
+    
+    .otp-box {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+    }
+</style>
+
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-user-plus me-2"></i>ARLMS - Student Registration
+          </h4>
+        </div>
+
+        <div class="card-body">
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          {% if errors %}
+          <div class="alert alert-danger">
+            <h5><i class="fas fa-exclamation-triangle me-2"></i>Please correct these errors:</h5>
+            <ul class="mb-0">
+              {% for field, error in errors.items %}
+              <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          <form method="POST" action="{% url 'register' %}" id="registrationForm" novalidate>
+            {% csrf_token %}
+            <input type="hidden" id="otpVerified" name="otp_verified" value="0">
+            <input type="hidden" id="generatedOtp" value="">
+            
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Username *</label>
+                <input class="form-control {% if errors.username %}is-invalid{% endif %}" 
+                       name="username" id="username" required
+                       value="{{ form_data.username|default:'' }}"
+                       placeholder="Enter username">
+                <small class="form-hint">4-30 characters</small>
+                {% if errors.username %}
+                <div class="server-error">{{ errors.username }}</div>
+                {% else %}
+                <div class="error-message" id="username-error"></div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Email *</label>
+                <div class="input-group">
+                  <input class="form-control {% if errors.email %}is-invalid{% endif %}" 
+                         id="email" name="email" required
+                         value="{{ form_data.email|default:'' }}"
+                         placeholder="student@college.edu.np">
+                  <button type="button" class="btn btn-outline-primary" id="sendOtpBtn">
+                    Send OTP
+                  </button>
+                </div>
+                <small class="form-hint">Enter valid email address</small>
+                {% if errors.email %}
+                <div class="server-error">{{ errors.email }}</div>
+                {% else %}
+                <div class="error-message" id="email-error"></div>
+                {% endif %}
+                
+                <!-- Simple OTP Section -->
+                <div class="otp-box" id="otpSection" style="display: none;">
+                  <div class="row g-2">
+                    <div class="col-8">
+                      <input type="text" class="form-control" id="otpInput" 
+                             placeholder="Enter OTP" maxlength="6">
+                    </div>
+                    <div class="col-4">
+                      <button type="button" class="btn btn-success w-100" id="verifyOtpBtn">
+                        Verify
+                      </button>
+                    </div>
+                  </div>
+                  <small id="otpMessage" class="text-muted"></small>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Password *</label>
+                <div class="input-group">
+                  <input type="password" class="form-control {% if errors.password1 %}is-invalid{% endif %}" 
+                         name="password1" required 
+                         placeholder="Create password" id="password1"
+                         value="{{ form_data.password1|default:'' }}">
+                  <button class="btn btn-outline-secondary password-toggle" type="button" id="togglePassword1">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+                <small class="form-hint">Minimum 8 characters</small>
+                {% if errors.password1 %}
+                <div class="server-error">{{ errors.password1 }}</div>
+                {% else %}
+                <div class="error-message" id="password1-error"></div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Confirm Password *</label>
+                <div class="input-group">
+                  <input type="password" class="form-control {% if errors.password2 %}is-invalid{% endif %}" 
+                         name="password2" required 
+                         placeholder="Confirm password" id="password2"
+                         value="{{ form_data.password2|default:'' }}">
+                  <button class="btn btn-outline-secondary password-toggle" type="button" id="togglePassword2">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+                <small class="form-hint">Re-enter the same password</small>
+                {% if errors.password2 %}
+                <div class="server-error">{{ errors.password2 }}</div>
+                {% else %}
+                <div class="error-message" id="password2-error"></div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Student ID *</label>
+                <input class="form-control {% if errors.student_id %}is-invalid{% endif %}" 
+                       name="student_id" id="student_id" required
+                       value="{{ form_data.student_id|default:'' }}"
+                       placeholder="e.g., 075BIM001">
+                <small class="form-hint">Format: 075BIM001</small>
+                {% if errors.student_id %}
+                <div class="server-error">{{ errors.student_id }}</div>
+                {% else %}
+                <div class="error-message" id="student_id-error"></div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Full Name *</label>
+                <input class="form-control {% if errors.full_name %}is-invalid{% endif %}" 
+                       name="full_name" id="full_name" required
+                       value="{{ form_data.full_name|default:'' }}"
+                       placeholder="Enter full name">
+                <small class="form-hint">Your complete name as in ID card</small>
+                {% if errors.full_name %}
+                <div class="server-error">{{ errors.full_name }}</div>
+                {% else %}
+                <div class="error-message" id="full_name-error"></div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Program *</label>
+                <select class="form-select {% if errors.program %}is-invalid{% endif %}" 
+                        name="program" required id="program">
+                  <option value="">Select Program</option>
+                  <option value="BIM" {% if form_data.program == "BIM" %}selected{% endif %}>BIM</option>
+                  <option value="BCA" {% if form_data.program == "BCA" %}selected{% endif %}>BCA</option>
+                  <option value="BBA" {% if form_data.program == "BBA" %}selected{% endif %}>BBA</option>
+                  <option value="BBM" {% if form_data.program == "BBM" %}selected{% endif %}>BBM</option>
+                </select>
+                <small class="form-hint">Choose your program</small>
+                {% if errors.program %}
+                <div class="server-error">{{ errors.program }}</div>
+                {% else %}
+                <div class="error-message" id="program-error"></div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Semester *</label>
+                <select class="form-select {% if errors.semester %}is-invalid{% endif %}" 
+                        name="semester" required id="semester">
+                  <option value="">Select Semester</option>
+                  {% for i in "12345678" %}
+                    <option value="{{ i }}" {% if form_data.semester == i %}selected{% endif %}>Semester {{ i }}</option>
+                  {% endfor %}
+                </select>
+                <small class="form-hint">Current semester (1-8)</small>
+                {% if errors.semester %}
+                <div class="server-error">{{ errors.semester }}</div>
+                {% else %}
+                <div class="error-message" id="semester-error"></div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Shift *</label>
+                <select class="form-select {% if errors.shift %}is-invalid{% endif %}" 
+                        name="shift" required id="shift">
+                  <option value="">Select Shift</option>
+                  <option value="morning" {% if form_data.shift == "morning" %}selected{% endif %}>Morning</option>
+                  <option value="day" {% if form_data.shift == "day" %}selected{% endif %}>Day</option>
+                </select>
+                <small class="form-hint">Morning or Day shift</small>
+                {% if errors.shift %}
+                <div class="server-error">{{ errors.shift }}</div>
+                {% else %}
+                <div class="error-message" id="shift-error"></div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Phone Number *</label>
+                <input class="form-control {% if errors.phone %}is-invalid{% endif %}" 
+                       name="phone" id="phone" required
+                       value="{{ form_data.phone|default:'' }}"
+                       placeholder="98XXXXXXXX">
+                <small class="form-hint">10-digit Nepal mobile number</small>
+                {% if errors.phone %}
+                <div class="server-error">{{ errors.phone }}</div>
+                {% else %}
+                <div class="error-message" id="phone-error"></div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Address</label>
+                <input class="form-control" name="address" id="address"
+                       value="{{ form_data.address|default:'' }}"
+                       placeholder="Your address">
+                <small class="form-hint">Optional - Your current address</small>
+              </div>
+            </div>
+
+            <div class="form-check mb-4">
+              <input class="form-check-input {% if errors.terms %}is-invalid{% endif %}" 
+                     type="checkbox" required id="agreeTerms" name="agreeTerms"
+                     {% if form_data.agreeTerms %}checked{% endif %}>
+              <label class="form-check-label">I agree to the Terms and Conditions *</label>
+              {% if errors.terms %}
+              <div class="server-error">{{ errors.terms }}</div>
+              {% else %}
+              <div class="error-message" id="terms-error"></div>
+              {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">
+              <i class="fas fa-user-plus me-2"></i> Register Now
+            </button>
+          </form>
+
+          <div class="text-center mt-3">
+            <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+// Simple password toggle
+document.getElementById('togglePassword1').addEventListener('click', function() {
+    const passwordField = document.getElementById('password1');
+    const icon = this.querySelector('i');
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        passwordField.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+});
+
+document.getElementById('togglePassword2').addEventListener('click', function() {
+    const passwordField = document.getElementById('password2');
+    const icon = this.querySelector('i');
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        passwordField.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+});
+
+// Very simple client-side validation - only show errors as user types
+function setupFieldValidation(fieldId, validationFn) {
+    const field = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(fieldId + '-error');
+    
+    if (!field || !errorDiv) return;
+    
+    field.addEventListener('blur', function() {
+        const value = this.value.trim();
+        const error = validationFn(value, fieldId);
+        
+        if (error) {
+            errorDiv.textContent = error;
+            errorDiv.style.display = 'block';
+            this.classList.add('is-invalid');
+        } else {
+            errorDiv.style.display = 'none';
+            this.classList.remove('is-invalid');
+        }
+    });
+}
+
+// Basic validations
+setupFieldValidation('username', function(value) {
+    if (!value) return 'Username is required';
+    if (value.length < 4) return 'Username must be at least 4 characters';
+    if (value.length > 30) return 'Username must be less than 30 characters';
+    return '';
+});
+
+setupFieldValidation('email', function(value) {
+    if (!value) return 'Email is required';
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailPattern.test(value)) return 'Please enter a valid email';
+    return '';
+});
+
+setupFieldValidation('password1', function(value) {
+    if (!value) return 'Password is required';
+    if (value.length < 8) return 'Password must be at least 8 characters';
+    return '';
+});
+
+setupFieldValidation('student_id', function(value) {
+    if (!value) return 'Student ID is required';
+    return '';
+});
+
+setupFieldValidation('full_name', function(value) {
+    if (!value) return 'Full name is required';
+    if (value.length < 2) return 'Full name is too short';
+    return '';
+});
+
+setupFieldValidation('phone', function(value) {
+    if (!value) return 'Phone number is required';
+    const phonePattern = /^9[6-8]\d{8}$/;
+    if (!phonePattern.test(value)) return 'Enter valid 10-digit Nepal number (98XXXXXXXX)';
+    return '';
+});
+
+// Check password match
+document.getElementById('password2').addEventListener('blur', function() {
+    const password1 = document.getElementById('password1').value;
+    const password2 = this.value;
+    const errorDiv = document.getElementById('password2-error');
+    
+    if (password1 && password2 && password1 !== password2) {
+        errorDiv.textContent = 'Passwords do not match';
+        errorDiv.style.display = 'block';
+        this.classList.add('is-invalid');
+    } else {
+        errorDiv.style.display = 'none';
+        this.classList.remove('is-invalid');
+    }
+});
+
+// Check dropdowns
+['program', 'semester', 'shift'].forEach(function(fieldId) {
+    const field = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(fieldId + '-error');
+    
+    if (field && errorDiv) {
+        field.addEventListener('change', function() {
+            if (!this.value) {
+                errorDiv.textContent = 'This field is required';
+                errorDiv.style.display = 'block';
+                this.classList.add('is-invalid');
+            } else {
+                errorDiv.style.display = 'none';
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+});
+
+// Check terms
+document.getElementById('agreeTerms').addEventListener('change', function() {
+    const errorDiv = document.getElementById('terms-error');
+    if (!this.checked) {
+        errorDiv.textContent = 'You must agree to the terms';
+        errorDiv.style.display = 'block';
+    } else {
+        errorDiv.style.display = 'none';
+    }
+});
+
+// ============ OTP FUNCTIONALITY ============
+
+// Send OTP Button
+document.getElementById('sendOtpBtn').addEventListener('click', function() {
+    const email = document.getElementById('email').value.trim();
+    const emailError = document.getElementById('email-error');
+    
+    // Validate email
+    if (!email) {
+        emailError.textContent = 'Email is required';
+        emailError.style.display = 'block';
+        return;
+    }
+    
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailPattern.test(email)) {
+        emailError.textContent = 'Please enter a valid email';
+        emailError.style.display = 'block';
+        return;
+    }
+    
+    // Clear error
+    emailError.style.display = 'none';
+    
+    // Show loading state
+    const originalText = this.innerHTML;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending...';
+    this.disabled = true;
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Send AJAX request to send OTP
+    fetch('/send-otp/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            'email': email
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show OTP section
+            document.getElementById('otpSection').style.display = 'block';
+            
+            // Store OTP in hidden field (for client-side verification)
+            document.getElementById('generatedOtp').value = data.otp;
+            
+            // Show success message
+            const otpMessage = document.getElementById('otpMessage');
+            otpMessage.textContent = 'OTP sent! Check terminal for OTP: ' + data.otp;
+            otpMessage.className = 'text-success';
+            
+            // Update button
+            this.innerHTML = '<i class="fas fa-check me-1"></i> OTP Sent';
+            this.className = 'btn btn-outline-success';
+            
+            // Log to console for testing
+            console.log('OTP sent to ' + email + ': ' + data.otp);
+            console.log('AJAX Response: OTP sent successfully');
+            
+            // Re-enable button after 30 seconds
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Send OTP';
+                this.className = 'btn btn-outline-primary';
+                this.disabled = false;
+            }, 30000);
+            
+        } else {
+            // Show error
+            const otpMessage = document.getElementById('otpMessage');
+            otpMessage.textContent = 'Error: ' + data.error;
+            otpMessage.className = 'text-danger';
+            
+            // Reset button
+            this.innerHTML = originalText;
+            this.disabled = false;
+            
+            console.error('OTP send failed:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('AJAX Error:', error);
+        
+        // Show error message
+        const otpMessage = document.getElementById('otpMessage');
+        otpMessage.textContent = 'Failed to send OTP. Please try again.';
+        otpMessage.className = 'text-danger';
+        
+        // Reset button
+        this.innerHTML = originalText;
+        this.disabled = false;
+    });
+});
+
+// Verify OTP Button
+document.getElementById('verifyOtpBtn').addEventListener('click', function() {
+    const enteredOtp = document.getElementById('otpInput').value.trim();
+    const generatedOtp = document.getElementById('generatedOtp').value;
+    const otpMessage = document.getElementById('otpMessage');
+    
+    if (!enteredOtp) {
+        otpMessage.textContent = 'Please enter the OTP';
+        otpMessage.className = 'text-danger';
+        return;
+    }
+    
+    if (enteredOtp.length !== 6) {
+        otpMessage.textContent = 'OTP must be 6 digits';
+        otpMessage.className = 'text-danger';
+        return;
+    }
+    
+    // For testing: verify locally
+    // In production, you would verify via AJAX to your Django view
+    if (enteredOtp === generatedOtp) {
+        // OTP verified successfully
+        otpMessage.textContent = '✓ Email verified successfully!';
+        otpMessage.className = 'text-success';
+        
+        // Set verified flag
+        document.getElementById('otpVerified').value = '1';
+        
+        // Disable OTP inputs
+        document.getElementById('otpInput').disabled = true;
+        this.disabled = true;
+        
+        // Enable submit button
+        document.getElementById('submitBtn').disabled = false;
+        
+        console.log('OTP verification: SUCCESS');
+        
+        // Optionally verify with server (for production)
+        /*
+        fetch('/verify-otp/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                'email': document.getElementById('email').value.trim(),
+                'otp': enteredOtp
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                otpMessage.textContent = '✓ Email verified successfully!';
+                otpMessage.className = 'text-success';
+                document.getElementById('otpVerified').value = '1';
+                document.getElementById('otpInput').disabled = true;
+                this.disabled = true;
+                document.getElementById('submitBtn').disabled = false;
+            } else {
+                otpMessage.textContent = '✗ ' + data.error;
+                otpMessage.className = 'text-danger';
+            }
+        });
+        */
+        
+    } else {
+        otpMessage.textContent = '✗ Invalid OTP. Please try again.';
+        otpMessage.className = 'text-danger';
+        console.log('OTP verification: FAILED');
+    }
+});
+
+// Clear OTP verification when email changes
+document.getElementById('email').addEventListener('input', function() {
+    // Reset OTP verification
+    document.getElementById('otpVerified').value = '0';
+    document.getElementById('generatedOtp').value = '';
+    
+    // Reset OTP section
+    document.getElementById('otpSection').style.display = 'none';
+    document.getElementById('otpInput').value = '';
+    document.getElementById('otpInput').disabled = false;
+    document.getElementById('verifyOtpBtn').disabled = false;
+    document.getElementById('otpMessage').textContent = '';
+    
+    // Reset send button
+    const sendBtn = document.getElementById('sendOtpBtn');
+    sendBtn.innerHTML = 'Send OTP';
+    sendBtn.className = 'btn btn-outline-primary';
+    sendBtn.disabled = false;
+    
+    // Disable submit button until new OTP is verified
+    document.getElementById('submitBtn').disabled = true;
+});
+
+// Form submission - minimal validation
+document.getElementById('registrationForm').addEventListener('submit', function(e) {
+    console.log('Form submitted');
+    
+    // Check OTP verification first
+    const otpVerified = document.getElementById('otpVerified').value;
+    if (otpVerified !== '1') {
+        e.preventDefault();
+        alert('Please verify your email with OTP first.');
+        document.getElementById('otpSection').scrollIntoView({ behavior: 'smooth' });
+        return;
+    }
+    
+    // Only prevent submission if there are obvious errors
+    let hasError = false;
+    
+    // Check required fields
+    const requiredFields = ['username', 'email', 'password1', 'password2', 
+                           'student_id', 'full_name', 'phone', 'program',
+                           'semester', 'shift'];
+    
+    requiredFields.forEach(function(fieldId) {
+        const field = document.getElementById(fieldId);
+        const errorDiv = document.getElementById(fieldId + '-error');
+        
+        if (field && (!field.value || !field.value.trim())) {
+            if (errorDiv) {
+                errorDiv.textContent = 'This field is required';
+                errorDiv.style.display = 'block';
+            }
+            field.classList.add('is-invalid');
+            hasError = true;
+        }
+    });
+    
+    // Check passwords match
+    const password1 = document.getElementById('password1').value;
+    const password2 = document.getElementById('password2').value;
+    if (password1 !== password2) {
+        const errorDiv = document.getElementById('password2-error');
+        if (errorDiv) {
+            errorDiv.textContent = 'Passwords do not match';
+            errorDiv.style.display = 'block';
+        }
+        document.getElementById('password2').classList.add('is-invalid');
+        hasError = true;
+    }
+    
+    // Check terms
+    if (!document.getElementById('agreeTerms').checked) {
+        const errorDiv = document.getElementById('terms-error');
+        if (errorDiv) {
+            errorDiv.textContent = 'You must agree to the terms';
+            errorDiv.style.display = 'block';
+        }
+        hasError = true;
+    }
+    
+    if (hasError) {
+        e.preventDefault();
+        // Show alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+        alertDiv.innerHTML = `
+            <strong>Please fix the errors above before submitting.</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.card-body').appendChild(alertDiv);
+    } else {
+        // Disable button to prevent double submission
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Creating Account...';
+        console.log('Form validation passed, submitting to server...');
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Registration page with OTP loaded');
+    
+    // Initially disable submit button until OTP is verified
+    document.getElementById('submitBtn').disabled = true;
+});
+</script>
+
+{% endblock %}

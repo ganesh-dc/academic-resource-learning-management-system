@@ -1,0 +1,126 @@
+{% extends 'myapp/base.html' %}
+
+{% block title %}Edit Resource - ARLMS{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Edit Resource
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Title *</label>
+                            <input type="text" name="title" class="form-control" 
+                                   value="{{ resource.title }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Description *</label>
+                            <textarea name="description" class="form-control" 
+                                      rows="4" required>{{ resource.description }}</textarea>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Category</label>
+                                <select name="category" class="form-select">
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}" 
+                                            {% if resource.category.id == category.id %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Resource Type</label>
+                                <select name="is_premium" class="form-select">
+                                    <option value="false" {% if not resource.is_premium %}selected{% endif %}>Free</option>
+                                    <option value="true" {% if resource.is_premium %}selected{% endif %}>Premium</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Price ($)</label>
+                                <input type="number" name="price" class="form-control" 
+                                       step="0.01" min="0" value="{{ resource.price|default:0 }}">
+                                <small class="text-muted">Only applicable for premium resources</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Current File</label>
+                                <div class="form-control" style="background-color: #f8f9fa;">
+                                    <i class="fas fa-file me-2"></i>
+                                    {{ resource.file.name|default:"No file" }}
+                                </div>
+                                <small class="text-muted">To change file, upload a new one below</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Upload New File (Optional)</label>
+                            <input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt">
+                            <small class="text-muted">Leave empty to keep current file</small>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'resource_detail' resource.id %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Resource
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Danger Zone -->
+            <div class="card border-danger mt-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Danger Zone
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Once you delete a resource, there is no going back. Please be certain.
+                    </p>
+                    <form method="POST" action="{% url 'delete_resource' resource.id %}" 
+                          onsubmit="return confirm('Are you sure you want to delete this resource? This action cannot be undone.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Delete This Resource
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 5px;
+    }
+    
+    .btn {
+        border-radius: 5px;
+        padding: 8px 20px;
+    }
+</style>
+{% endblock %}

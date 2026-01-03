@@ -1,0 +1,221 @@
+{% extends 'myapp/base.html' %}
+{% block title %}Payment Successful - ARLMS{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="background-color: #f8fafc; min-height: 100vh;">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <!-- Progress Steps -->
+      <div class="d-flex align-items-center justify-content-center mb-5">
+        <div class="step completed">
+          <div class="step-circle">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="step-label">Select Resource</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step completed">
+          <div class="step-circle">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="step-label">Payment Method</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step completed">
+          <div class="step-circle">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="step-label">Complete</span>
+        </div>
+      </div>
+
+      <!-- Success Card -->
+      <div class="card shadow-sm border-0 text-center" style="border-radius: 12px; border: 1px solid #e5e7eb;">
+        <div class="card-body p-5">
+          <!-- Success Icon -->
+          <div class="mb-4">
+            <div class="success-icon mx-auto mb-3">
+              <i class="fas fa-check fa-2x"></i>
+            </div>
+            <h2 class="fw-bold text-success mb-3" style="color: #10b981;">Payment Successful!</h2>
+            <p class="lead text-muted mb-4">
+              You have successfully purchased the resource.
+            </p>
+          </div>
+          
+          <!-- Resource Info -->
+          <div class="card border mb-4" style="background-color: #f8fafc; border-color: #e5e7eb;">
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-3">
+                <div class="flex-shrink-0 me-3">
+                  {% if payment.resource.file %}
+                    {% if payment.resource.file.name|lower|slice:'-4:' == '.pdf' %}
+                      <div class="p-3 rounded-3" style="background-color: #fee2e2;">
+                        <i class="fas fa-file-pdf fa-2x" style="color: #dc2626;"></i>
+                      </div>
+                    {% else %}
+                      <div class="p-3 rounded-3" style="background-color: #dbeafe;">
+                        <i class="fas fa-file-alt fa-2x" style="color: #4f46e5;"></i>
+                      </div>
+                    {% endif %}
+                  {% endif %}
+                </div>
+                <div class="flex-grow-1 text-start">
+                  <h6 class="fw-bold mb-1" style="color: #1f2937;">{{ payment.resource.title }}</h6>
+                  <small class="text-muted">
+                    {{ payment.resource.uploaded_by.get_full_name|default:payment.resource.uploaded_by.username }}
+                  </small>
+                </div>
+              </div>
+              
+              <div class="border-top pt-3">
+                <div class="row">
+                  <div class="col-6">
+                    <small class="text-muted d-block">Amount Paid</small>
+                    <strong class="text-primary">Rs {{ payment.amount }}</strong>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted d-block">Date</small>
+                    <strong>{{ payment.payment_date|date:"M d, Y" }}</strong>
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <small class="text-muted d-block">Transaction ID</small>
+                  <code class="small">{{ payment.transaction_id|default:"N/A" }}</code>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Next Steps -->
+          <div class="mb-4">
+            <h6 class="fw-bold mb-3" style="color: #4b5563;">What's Next?</h6>
+            <div class="d-flex align-items-start mb-3">
+              <i class="fas fa-download text-success me-3 mt-1"></i>
+              <div class="text-start">
+                <strong>Download the resource</strong>
+                <p class="small text-muted mb-0">
+                  You can now download the file immediately.
+                </p>
+              </div>
+            </div>
+            <div class="d-flex align-items-start">
+              <i class="fas fa-history text-primary me-3 mt-1"></i>
+              <div class="text-start">
+                <strong>Access anytime</strong>
+                <p class="small text-muted mb-0">
+                  Find it in "My Purchases" section of your dashboard.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="d-grid gap-2">
+            <a href="{% url 'resource_detail' payment.resource.id %}" 
+               class="btn btn-lg py-3 fw-bold"
+               style="background-color: #4f46e5; color: white; border: none; border-radius: 8px;">
+              <i class="fas fa-download me-2"></i>
+              Download Now
+            </a>
+            
+            <a href="{% url 'student_purchased_resources' %}" 
+               class="btn btn-outline-primary py-3">
+              <i class="fas fa-folder me-2"></i>
+              View My Purchases
+            </a>
+            
+            <a href="{% url 'student_dashboard' %}" 
+               class="btn btn-outline-secondary py-3">
+              <i class="fas fa-home me-2"></i>
+              Back to Dashboard
+            </a>
+          </div>
+          
+          <!-- Receipt Info -->
+          <div class="mt-4 pt-3 border-top">
+            <p class="small text-muted mb-0">
+              <i class="fas fa-envelope me-1"></i>
+              A receipt has been sent to <strong>{{ user.email }}</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.step {
+  text-align: center;
+  min-width: 120px;
+}
+
+.step-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #10b981;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+}
+
+.step-label {
+  font-size: 0.875rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background-color: #10b981;
+  margin: 20px 10px 0;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #10b981;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.card {
+  border-radius: 12px;
+}
+
+.btn {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+code {
+  font-family: 'Courier New', monospace;
+  background-color: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+</style>
+
+<script>
+// Auto-redirect to resource after 5 seconds (optional)
+setTimeout(function() {
+  // Optional: Uncomment if you want auto-redirect
+  // window.location.href = "{% url 'resource_detail' payment.resource.id %}";
+}, 5000);
+</script>
+{% endblock %}

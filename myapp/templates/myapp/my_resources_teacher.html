@@ -1,0 +1,255 @@
+{% extends 'myapp/base.html' %}
+
+{% block title %}My Resources - Teacher{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Simple Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-folder-open text-primary me-2"></i>All My Resources</h2>
+                    <p class="text-muted mb-0">Manage your teaching resources</p>
+                </div>
+                <div>
+                    <a href="{% url 'upload_resource' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Upload New Resource
+                    </a>
+                    <a href="{% url 'teacher_dashboard' %}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+            <hr>
+        </div>
+    </div>
+
+    <!-- Simple Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ resource_count|default:0 }}</h3>
+                    <p class="text-muted mb-0">Total Resources</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ premium_count|default:0 }}</h3>
+                    <p class="text-muted mb-0">Premium</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ free_count|default:0 }}</h3>
+                    <p class="text-muted mb-0">Free</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ total_downloads|default:0 }}</h3>
+                    <p class="text-muted mb-0">Total Downloads</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resources List - Simple Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if resources %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Resource Title</th>
+                                        <th class="text-center">Type</th>
+                                        <th class="text-center">Views</th>
+                                        <th class="text-center">Downloads</th>
+                                        <th>Upload Date</th>
+                                        <th>Status</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resource in resources %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'resource_detail' resource.id %}" class="text-decoration-none">
+                                                <i class="fas fa-file me-2"></i>
+                                                {{ resource.title|truncatechars:40 }}
+                                            </a>
+                                            {% if resource.subject %}
+                                            <br><small class="text-muted">{{ resource.subject }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if resource.is_premium %}
+                                            <span class="badge bg-warning">Premium</span>
+                                            {% else %}
+                                            <span class="badge bg-success">Free</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info">{{ resource.views|default:0 }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary">{{ resource.download_count|default:0 }}</span>
+                                        </td>
+                                        <td>
+                                            <small>{{ resource.uploaded_date|date:"M d, Y" }}</small>
+                                        </td>
+                                        <td>
+                                            {% if resource.is_approved %}
+                                            <span class="badge bg-success">Approved</span>
+                                            {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'resource_detail' resource.id %}" class="btn btn-outline-info" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'edit_resource' resource.id %}" class="btn btn-outline-warning" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'download_resource' resource.id %}" class="btn btn-outline-success" title="Download">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger" title="Delete" onclick="confirmDelete({{ resource.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                            <h4>No Resources Yet</h4>
+                            <p class="text-muted mb-4">You haven't uploaded any teaching resources yet.</p>
+                            <a href="{% url 'upload_resource' %}" class="btn btn-primary">
+                                <i class="fas fa-upload me-2"></i>Upload Your First Resource
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Filter Options -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-center">
+                        <div class="btn-group">
+                            <a href="?filter=all" class="btn btn-sm {% if not request.GET.filter or request.GET.filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                All Resources ({{ resource_count|default:0 }})
+                            </a>
+                            <a href="?filter=premium" class="btn btn-sm {% if request.GET.filter == 'premium' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                                Premium ({{ premium_count|default:0 }})
+                            </a>
+                            <a href="?filter=free" class="btn btn-sm {% if request.GET.filter == 'free' %}btn-success{% else %}btn-outline-success{% endif %}">
+                                Free ({{ free_count|default:0 }})
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this resource? This action cannot be undone.</p>
+                <p class="text-danger"><strong>Warning:</strong> All feedback and download records for this resource will also be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a id="deleteConfirmBtn" href="#" class="btn btn-danger">Delete Resource</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Delete confirmation function
+function confirmDelete(resourceId) {
+    // Set the delete URL in the modal button
+    document.getElementById('deleteConfirmBtn').href = "{% url 'delete_resource' 0 %}".replace('0', resourceId);
+    
+    // Show the modal
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips if Bootstrap is available
+    if (typeof bootstrap !== 'undefined') {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+});
+</script>
+
+<style>
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    margin: 0 2px;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.4em 0.6em;
+}
+
+.card.text-center .card-body h3 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .btn-group-sm .btn {
+        padding: 0.2rem 0.3rem;
+        margin: 0 1px;
+        font-size: 0.75rem;
+    }
+    
+    .table th, .table td {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %}

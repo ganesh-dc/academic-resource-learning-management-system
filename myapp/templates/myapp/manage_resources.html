@@ -1,0 +1,377 @@
+{% extends 'myapp/base.html' %}
+
+{% block title %}Manage Resources - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h3 mb-2">
+                                <i class="fas fa-book text-success"></i> 
+                                Resource Management
+                            </h1>
+                            <p class="text-muted mb-0">
+                                Manage all learning resources in the system
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{% url 'upload_resource' %}" class="btn btn-success">
+                                <i class="fas fa-upload"></i> Upload Resource
+                            </a>
+                            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Resource Type</label>
+                            <select name="type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="premium" {% if resource_type == 'premium' %}selected{% endif %}>Premium</option>
+                                <option value="free" {% if resource_type == 'free' %}selected{% endif %}>Free</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Category</label>
+                            <select name="category" class="form-select">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"i" %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Search Resources</label>
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Search by title or description..." 
+                                   value="{{ search_query }}">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search"></i> Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resource Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Resources
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_resources }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-book fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Downloads
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_downloads|default:0 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-download fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Premium Resources
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ premium_resources_count }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-crown fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Teachers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_teachers }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resources Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-table"></i> All Resources ({{ resources|length }})
+                    </h6>
+                    <div>
+                        <a href="#" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#bulkActionModal">
+                            <i class="fas fa-tasks"></i> Bulk Actions
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if resources %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered" id="resourceTable">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Title</th>
+                                        <th>Uploaded By</th>
+                                        <th>Category</th>
+                                        <th>Type</th>
+                                        <th>Price</th>
+                                        <th>Views</th>
+                                        <th>Uploaded</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resource in resources %}
+                                    <tr>
+                                        <td>{{ resource.id }}</td>
+                                        <td>
+                                            <a href="{% url 'resource_detail' resource.id %}" class="text-decoration-none">
+                                                <strong>{{ resource.title|truncatechars:40 }}</strong>
+                                            </a>
+                                            <br>
+                                            <small class="text-muted">{{ resource.description|truncatechars:60 }}</small>
+                                        </td>
+                                        <td>
+                                            {{ resource.uploaded_by.username }}
+                                            <br>
+                                            <small class="text-muted">{{ resource.uploaded_by.get_full_name|default:"" }}</small>
+                                        </td>
+                                        <td>
+                                            {% if resource.category %}
+                                                <span class="badge bg-secondary">{{ resource.category.name }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if resource.is_premium %}
+                                                <span class="badge bg-warning">Premium</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Free</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if resource.is_premium %}
+                                                <span class="text-success">${{ resource.price }}</span>
+                                            {% else %}
+                                                <span class="text-muted">Free</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ resource.views }}</span>
+                                        </td>
+                                        <td>{{ resource.uploaded_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <!-- ONLY View and Download buttons -->
+                                                <a href="{% url 'resource_detail' resource.id %}" class="btn btn-sm btn-outline-info" 
+                                                   data-bs-toggle="tooltip" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'download_resource' resource.id %}" class="btn btn-sm btn-outline-success" 
+                                                   data-bs-toggle="tooltip" title="Download">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if resources.has_other_pages %}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                {% if resources.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ resources.previous_page_number }}{% if resource_type %}&type={{ resource_type }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                        Previous
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for i in resources.paginator.page_range %}
+                                    {% if resources.number == i %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ i }}</span>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ i }}{% if resource_type %}&type={{ resource_type }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                            {{ i }}
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if resources.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ resources.next_page_number }}{% if resource_type %}&type={{ resource_type }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                        Next
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Resources Found</h5>
+                            <p class="text-muted">Try adjusting your search criteria or upload new resources</p>
+                            <a href="{% url 'upload_resource' %}" class="btn btn-success mt-2">
+                                <i class="fas fa-upload"></i> Upload Your First Resource
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+        
+    </div>
+</div>
+
+<!-- Bulk Action Modal -->
+<div class="modal fade" id="bulkActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bulk Resource Actions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Select Action</label>
+                    <select class="form-select" id="bulkAction">
+                        <option value="">Choose action...</option>
+                        <option value="category">Change Category</option>
+                        <option value="type">Change Type (Free/Premium)</option>
+                        <option value="price">Update Prices</option>
+                        <option value="delete">Delete Selected</option>
+                    </select>
+                </div>
+                <div id="actionDetails" class="mt-3" style="display: none;">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="applyBulkAction">Apply Action</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table-hover tbody tr:hover {
+    background-color: rgba(40,167,69,.075);
+}
+
+.badge {
+    font-size: 0.8em;
+    padding: 0.35em 0.65em;
+}
+
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.page-link {
+    color: #28a745;
+}
+
+.page-item.active .page-link {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.resource-title {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+});
+</script>
+{% endblock %}

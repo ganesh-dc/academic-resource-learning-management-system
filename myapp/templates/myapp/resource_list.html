@@ -1,0 +1,271 @@
+{% extends 'myapp/base.html' %}
+
+{% block title %}Resources - ARLMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">Resource Library</h1>
+            <p class="text-muted">Browse and download educational resources</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Category</label>
+                            <select name="category" class="form-select">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"i" %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Type</label>
+                            <select name="type" class="form-select">
+                                <option value="">All Resources</option>
+                                <option value="free" {% if request.GET.type == 'free' %}selected{% endif %}>Free Only</option>
+                                <option value="premium" {% if request.GET.type == 'premium' %}selected{% endif %}>Premium Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Search resources..." value="{{ search_query }}">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">{{ resources.count }}</h5>
+                    <p class="card-text">Total Resources</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">{{ free_count }}</h5>
+                    <p class="card-text">Free Resources</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">{{ premium_count }}</h5>
+                    <p class="card-text">Premium Resources</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    {% if request.user.is_authenticated and request.user.role == 'teacher' %}
+                        <a href="{% url 'upload_resource' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-upload"></i> Upload Resource
+                        </a>
+                    {% else %}
+                        <h5 class="card-title">{{ categories.count }}</h5>
+                        <p class="card-text">Categories</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resources Grid -->
+    <div class="row">
+        {% if resources %}
+            {% for resource in resources %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">{{ resource.title }}</h5>
+                            <span class="badge {% if resource.is_premium %}bg-warning{% else %}bg-success{% endif %}">
+                                {% if resource.is_premium %}Premium{% else %}Free{% endif %}
+                            </span>
+                        </div>
+                        
+                        <p class="card-text text-muted small">
+                            {{ resource.description|truncatechars:150 }}
+                        </p>
+                        
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-user"></i> {{ resource.uploaded_by.username }}
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar"></i> {{ resource.uploaded_date|date:"M d, Y" }}
+                            </small>
+                            {% if resource.category %}
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-folder"></i> {{ resource.category.name }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- UPDATED CARD FOOTER WITH SAFETY CHECKS -->
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex justify-content-between">
+                            <!-- FIXED: Check if resource.id exists and is valid -->
+                            {% if resource.id and resource.id != '' %}
+                                <a href="{% url 'resource_detail' resource.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            {% else %}
+                                <button class="btn btn-sm btn-secondary" disabled>
+                                    <i class="fas fa-exclamation-triangle"></i> Invalid ID
+                                </button>
+                            {% endif %}
+                            
+                            <!-- CHECK IF USER IS LOGGED IN -->
+                            {% if request.user.is_authenticated %}
+                                {% if request.user.role == 'teacher' or request.user.role == 'admin' %}
+                                    <!-- Teachers/Admins: Always show download -->
+                                    {% if resource.id and resource.id != '' %}
+                                        <a href="{% url 'download_resource' resource.id %}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            <i class="fas fa-download"></i> Invalid
+                                        </button>
+                                    {% endif %}
+                                {% else %}
+                                    <!-- Students: Check if premium -->
+                                    {% if not resource.is_premium %}
+                                        {% if resource.id and resource.id != '' %}
+                                            <a href="{% url 'download_resource' resource.id %}" class="btn btn-sm btn-success">
+                                                <i class="fas fa-download"></i> Download
+                                            </a>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-secondary" disabled>
+                                                <i class="fas fa-download"></i> Invalid
+                                            </button>
+                                        {% endif %}
+                                    {% else %}
+                                        <!-- Students see purchase button for premium resources -->
+                                        {% if resource.id and resource.id != '' %}
+                                            <a href="{% url 'resource_detail' resource.id %}" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-shopping-cart"></i> Purchase
+                                            </a>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-secondary" disabled>
+                                                <i class="fas fa-shopping-cart"></i> Invalid
+                                            </button>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                            {% else %}
+                                <!-- NOT LOGGED IN - Show login button -->
+                                {% if resource.id and resource.id != '' %}
+                                    <a href="{% url 'login' %}?next={% url 'resource_detail' resource.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-sign-in-alt"></i> Login to Access
+                                    </a>
+                                {% else %}
+                                    <button class="btn btn-sm btn-secondary" disabled>
+                                        <i class="fas fa-sign-in-alt"></i> Invalid Resource
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Empty state -->
+            <div class="col-12">
+                <div class="alert alert-info text-center py-5">
+                    <i class="fas fa-book fa-3x mb-3 text-muted"></i>
+                    <h4>No Resources Found</h4>
+                    <p class="mb-0">
+                        {% if search_query %}
+                            No resources match your search "{{ search_query }}"
+                        {% else %}
+                            No resources available yet.
+                        {% endif %}
+                    </p>
+                    
+                    {% if request.user.is_authenticated and request.user.role == 'teacher' %}
+                        <a href="{% url 'upload_resource' %}" class="btn btn-primary mt-3">
+                            <i class="fas fa-upload"></i> Upload Your First Resource
+                        </a>
+                    {% elif not request.user.is_authenticated %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-primary mt-3">
+                            <i class="fas fa-sign-in-alt"></i> Login to Upload Resources
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination (optional) -->
+    {% if resources.has_other_pages %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if resources.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ resources.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                Previous
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for i in resources.paginator.page_range %}
+                        {% if resources.number == i %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ i }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    {{ i }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if resources.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ resources.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                Next
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

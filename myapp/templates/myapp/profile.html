@@ -1,0 +1,198 @@
+<!-- myapp/templates/myapp/profile.html -->
+{% extends 'myapp/base.html' %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  
+  <!-- Profile Card with Gradient Header -->
+  <div class="card shadow-lg border-0 overflow-hidden" style="max-width: 500px; margin: 0 auto;">
+    
+    <!-- Gradient Header -->
+    <div class="profile-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 120px; position: relative;">
+      <div class="text-center" style="position: absolute; bottom: -40px; left: 0; right: 0;">
+        <div class="avatar-circle mx-auto d-flex align-items-center justify-content-center" 
+             style="width: 80px; height: 80px; background: white; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+          <i class="fas fa-user-circle fa-3x text-primary" style="color: #667eea !important;"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card-body pt-5">
+      
+      <!-- Profile Header Info -->
+      <div class="text-center mb-4 mt-2">
+        <h4 class="fw-bold mb-1" style="color: #333;">{{ profile_user.get_full_name|default:profile_user.username }}</h4>
+        <p class="text-muted mb-2">
+          <i class="fas fa-envelope me-1"></i> {{ profile_user.email }}
+        </p>
+        <div class="d-flex justify-content-center align-items-center gap-2">
+          <span class="badge rounded-pill" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 6px 16px;">
+            <i class="fas fa-graduation-cap me-1"></i> {{ profile_user.get_role_display|default:profile_user.role|title }}
+          </span>
+          {% if profile_user.student_id %}
+          <span class="badge bg-light text-dark border" style="padding: 6px 12px;">
+            <i class="fas fa-id-card me-1"></i> ID: {{ profile_user.student_id }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Student Information Card -->
+      <div class="card border-0 mb-4" style="background: #f8f9ff; border-radius: 12px;">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="icon-circle me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+              <i class="fas fa-user-graduate text-white"></i>
+            </div>
+            <h5 class="mb-0 fw-bold" style="color: #333;">
+              {% if profile_user.role == 'student' %}Student{% else %}User{% endif %} Information
+            </h5>
+          </div>
+          
+          <!-- Information Grid -->
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="info-item p-3 rounded" style="background: white; border-left: 4px solid #667eea;">
+                <small class="d-block text-uppercase text-muted mb-1" style="font-size: 0.75rem; font-weight: 600;">
+                  <i class="fas fa-user me-1"></i> Full Name
+                </small>
+                <div class="fw-medium">{{ profile_user.get_full_name|default:profile_user.username }}</div>
+              </div>
+            </div>
+            
+            <div class="col-12">
+              <div class="info-item p-3 rounded" style="background: white; border-left: 4px solid #764ba2;">
+                <small class="d-block text-uppercase text-muted mb-1" style="font-size: 0.75rem; font-weight: 600;">
+                  <i class="fas fa-envelope me-1"></i> Email
+                </small>
+                <div class="fw-medium">{{ profile_user.email }}</div>
+              </div>
+            </div>
+            
+            {% if profile_user.student_id %}
+            <div class="col-12">
+              <div class="info-item p-3 rounded" style="background: white; border-left: 4px solid #4f46e5;">
+                <small class="d-block text-uppercase text-muted mb-1" style="font-size: 0.75rem; font-weight: 600;">
+                  <i class="fas fa-id-card me-1"></i> Student ID / Roll Number
+                </small>
+                <div class="fw-medium">{{ profile_user.student_id }}</div>
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if profile_user.phone %}
+            <div class="col-12">
+              <div class="info-item p-3 rounded" style="background: white; border-left: 4px solid #8b5cf6;">
+                <small class="d-block text-uppercase text-muted mb-1" style="font-size: 0.75rem; font-weight: 600;">
+                  <i class="fas fa-phone me-1"></i> Phone
+                </small>
+                <div class="fw-medium">{{ profile_user.phone }}</div>
+              </div>
+            </div>
+            {% endif %}
+            
+            <!-- Add these fields if they exist in your User model -->
+            {% if profile_user.program %}
+            <div class="col-12">
+              <div class="info-item p-3 rounded" style="background: white; border-left: 4px solid #7c3aed;">
+                <small class="d-block text-uppercase text-muted mb-1" style="font-size: 0.75rem; font-weight: 600;">
+                  <i class="fas fa-book me-1"></i> Program
+                </small>
+                <div class="fw-medium">{{ profile_user.get_program_display|default:profile_user.program }}</div>
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if profile_user.semester %}
+            <div class="col-12">
+              <div class="info-item p-3 rounded" style="background: white; border-left: 4px solid #6d28d9;">
+                <small class="d-block text-uppercase text-muted mb-1" style="font-size: 0.75rem; font-weight: 600;">
+                  <i class="fas fa-calendar-alt me-1"></i> Semester
+                </small>
+                <div class="fw-medium">{{ profile_user.semester }}</div>
+              </div>
+            </div>
+            {% endif %}
+            
+            <div class="col-12">
+              <div class="info-item p-3 rounded" style="background: white; border-left: 4px solid #5b21b6;">
+                <small class="d-block text-uppercase text-muted mb-1" style="font-size: 0.75rem; font-weight: 600;">
+                  <i class="fas fa-calendar-plus me-1"></i> Joined
+                </small>
+                <div class="fw-medium">{{ profile_user.date_joined|date:"F d, Y" }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="d-grid gap-3">
+        {% if request.user == profile_user %}
+        <!-- Edit Profile Button (only for own profile) -->
+        <a href="{% url 'edit_profile' %}" class="btn btn-lg d-flex align-items-center justify-content-center" 
+           style="background: #fff; color: #667eea; border: 2px solid #667eea; padding: 12px; border-radius: 10px;">
+          <i class="fas fa-edit me-3"></i>
+          <span class="flex-grow-1 text-center">Edit Profile</span>
+        </a>
+        {% endif %}
+        
+        <a href="{% url 'dashboard' %}" class="btn btn-lg d-flex align-items-center justify-content-center" 
+           style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px; border-radius: 10px;">
+          <i class="fas fa-arrow-left me-3"></i>
+          <span class="flex-grow-1 text-center">Back to Dashboard</span>
+        </a>
+        
+        <!-- Optional: Remove logout button since it's in navbar -->
+        <!-- <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-lg d-flex align-items-center justify-content-center" 
+           style="padding: 12px; border-radius: 10px; border-width: 2px;">
+          <i class="fas fa-sign-out-alt me-3"></i>
+          <span class="flex-grow-1 text-center">Logout</span>
+        </a> -->
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<style>
+.card {
+  border-radius: 16px !important;
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.profile-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.info-item {
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.info-item:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.badge {
+  font-weight: 500;
+}
+
+.btn {
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+</style>
+{% endblock %}

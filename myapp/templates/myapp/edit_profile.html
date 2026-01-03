@@ -1,0 +1,368 @@
+<!-- myapp/templates/myapp/edit_profile.html -->
+{% extends 'myapp/base.html' %}
+{% load static %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Back Button -->
+    <div class="mb-4">
+        <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Profile
+        </a>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Edit Profile Card -->
+            <div class="card shadow-lg border-0 overflow-hidden" style="border-radius: 16px;">
+                <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-user-edit me-2"></i>Edit Profile
+                    </h5>
+                </div>
+                
+                <div class="card-body p-4">
+                    <!-- Messages -->
+                    {% if messages %}
+                    <div class="mb-4">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <!-- Personal Information -->
+                        <div class="mb-5">
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="icon-circle me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                                <h6 class="mb-0 fw-bold" style="color: #333;">Personal Information</h6>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <!-- Full Name -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="full_name" class="form-label fw-medium text-muted mb-1">
+                                            <i class="fas fa-user me-1"></i>Full Name *
+                                        </label>
+                                        <input type="text" class="form-control p-3 rounded-lg border-1" 
+                                               id="full_name" name="full_name" 
+                                               value="{{ user.get_full_name|default:user.username }}" 
+                                               placeholder="Enter your full name" required
+                                               style="border-color: #e0e0e0; background: #f8f9ff;">
+                                        <small class="form-text text-muted">Your complete name as in ID card</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Student ID -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="student_id" class="form-label fw-medium text-muted mb-1">
+                                            <i class="fas fa-id-card me-1"></i>Student ID *
+                                        </label>
+                                        <input type="text" class="form-control p-3 rounded-lg border-1" 
+                                               id="student_id" name="student_id" 
+                                               value="{{ user.student_id|default:'' }}" 
+                                               placeholder="e.g., 075BIM001" required
+                                               style="border-color: #e0e0e0; background: #f8f9ff;">
+                                        <small class="form-text text-muted">Format: 075BIM001</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Email -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="email" class="form-label fw-medium text-muted mb-1">
+                                            <i class="fas fa-envelope me-1"></i>Email Address *
+                                        </label>
+                                        <input type="email" class="form-control p-3 rounded-lg border-1" 
+                                               id="email" name="email" 
+                                               value="{{ user.email }}" 
+                                               placeholder="student@college.edu.np" required
+                                               style="border-color: #e0e0e0; background: #f8f9ff;">
+                                        <small class="form-text text-muted">Enter valid email address</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Phone -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="phone" class="form-label fw-medium text-muted mb-1">
+                                            <i class="fas fa-phone me-1"></i>Phone Number *
+                                        </label>
+                                        <input type="tel" class="form-control p-3 rounded-lg border-1" 
+                                               id="phone" name="phone" 
+                                               value="{{ user.phone|default:'' }}" 
+                                               placeholder="98XXXXXXXX" required
+                                               style="border-color: #e0e0e0; background: #f8f9ff;">
+                                        <small class="form-text text-muted">10-digit Nepal mobile number</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Address -->
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label for="address" class="form-label fw-medium text-muted mb-1">
+                                            <i class="fas fa-map-marker-alt me-1"></i>Address
+                                        </label>
+                                        <textarea class="form-control p-3 rounded-lg border-1" 
+                                                  id="address" name="address" 
+                                                  rows="2" placeholder="Your address"
+                                                  style="border-color: #e0e0e0; background: #f8f9ff;">{{ user.address|default:'' }}</textarea>
+                                        <small class="form-text text-muted">Optional - Your current address</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Academic Information (for students) -->
+                        {% if user.role == 'student' %}
+                        <div class="mb-5">
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="icon-circle me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-graduation-cap text-white"></i>
+                                </div>
+                                <h6 class="mb-0 fw-bold" style="color: #333;">Academic Information</h6>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <!-- Program - SAME AS REGISTRATION -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="program" class="form-label fw-medium text-muted mb-1">
+                                            <i class="fas fa-book me-1"></i>Program *
+                                        </label>
+                                        <select class="form-select p-3 rounded-lg border-1" 
+                                                id="program" name="program" required
+                                                style="border-color: #e0e0e0; background: #f8f9ff;">
+                                            <option value="">Select Program</option>
+                                            <option value="BIM" {% if user.program == "BIM" %}selected{% endif %}>BIM</option>
+                                            <option value="BCA" {% if user.program == "BCA" %}selected{% endif %}>BCA</option>
+                                            <option value="BBA" {% if user.program == "BBA" %}selected{% endif %}>BBA</option>
+                                            <option value="BBM" {% if user.program == "BBM" %}selected{% endif %}>BBM</option>
+                                        </select>
+                                        <small class="form-text text-muted">Choose your program</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Semester - SAME AS REGISTRATION -->
+                                <!-- Change this part in edit_profile.html -->
+<!-- Semester - Send just number -->
+<div class="col-md-6">
+    <div class="form-group">
+        <label for="semester" class="form-label fw-medium text-muted mb-1">
+            <i class="fas fa-calendar-alt me-1"></i>Semester *
+        </label>
+        <select class="form-select p-3 rounded-lg border-1" 
+                id="semester" name="semester" required
+                style="border-color: #e0e0e0; background: #f8f9ff;">
+            <option value="">Select Semester</option>
+            {% for i in "12345678" %}
+                <option value="{{ i }}" {% if user.semester == i or user.semester == "Semester "|add:i %}selected{% endif %}>Semester {{ i }}</option>
+            {% endfor %}
+        </select>
+        <small class="form-text text-muted">Current semester (1-8)</small>
+    </div>
+</div>
+                                <!-- Shift -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="shift" class="form-label fw-medium text-muted mb-1">
+                                            <i class="fas fa-clock me-1"></i>Shift *
+                                        </label>
+                                        <select class="form-select p-3 rounded-lg border-1" 
+                                                id="shift" name="shift" required
+                                                style="border-color: #e0e0e0; background: #f8f9ff;">
+                                            <option value="">Select Shift</option>
+                                            <option value="morning" {% if user.shift == "morning" %}selected{% endif %}>Morning</option>
+                                            <option value="day" {% if user.shift == "day" %}selected{% endif %}>Day</option>
+                                        </select>
+                                        <small class="form-text text-muted">Morning or Day shift</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between align-items-center pt-4 border-top">
+                            <a href="{% url 'profile' %}" class="btn btn-lg px-4" 
+                               style="background: #f8f9ff; color: #667eea; border: 2px solid #667eea; border-radius: 10px;">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-lg px-4" 
+                                    style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px;">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-control:focus, .form-select:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25) !important;
+    background: white !important;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.rounded-lg {
+    border-radius: 12px !important;
+}
+
+.card {
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+    display: none;
+}
+
+.form-control.is-invalid, .form-select.is-invalid {
+    border-color: #dc3545;
+}
+</style>
+
+<script>
+// Simple form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const requiredFields = ['full_name', 'student_id', 'email', 'phone'];
+    
+    // Add student-specific fields if applicable
+    {% if user.role == 'student' %}
+    requiredFields.push('program', 'semester', 'shift');
+    {% endif %}
+    
+    // Validate required fields on blur
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('blur', function() {
+                if (!this.value.trim()) {
+                    this.classList.add('is-invalid');
+                    this.focus();
+                } else {
+                    this.classList.remove('is-invalid');
+                }
+            });
+        }
+    });
+    
+    // Email validation
+    const emailField = document.getElementById('email');
+    if (emailField) {
+        emailField.addEventListener('blur', function() {
+            const email = this.value.trim();
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!emailPattern.test(email)) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Phone validation
+    const phoneField = document.getElementById('phone');
+    if (phoneField) {
+        phoneField.addEventListener('blur', function() {
+            const phone = this.value.trim();
+            const phonePattern = /^9[6-8]\d{8}$/;
+            if (!phonePattern.test(phone)) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Student ID validation
+    const studentIdField = document.getElementById('student_id');
+    if (studentIdField) {
+        studentIdField.addEventListener('blur', function() {
+            const studentId = this.value.trim();
+            // Check if it matches pattern like 075BIM001
+            if (studentId.length < 6 || studentId.length > 15) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        let hasError = false;
+        
+        // Check all required fields
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field && !field.value.trim()) {
+                field.classList.add('is-invalid');
+                if (!hasError) field.focus();
+                hasError = true;
+            }
+        });
+        
+        // Check email format
+        if (emailField && emailField.value.trim()) {
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!emailPattern.test(emailField.value.trim())) {
+                emailField.classList.add('is-invalid');
+                if (!hasError) emailField.focus();
+                hasError = true;
+            }
+        }
+        
+        // Check phone format
+        if (phoneField && phoneField.value.trim()) {
+            const phonePattern = /^9[6-8]\d{8}$/;
+            if (!phonePattern.test(phoneField.value.trim())) {
+                phoneField.classList.add('is-invalid');
+                if (!hasError) phoneField.focus();
+                hasError = true;
+            }
+        }
+        
+        if (hasError) {
+            e.preventDefault();
+            // Show error message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+            alertDiv.innerHTML = `
+                <strong>Please fix the errors above before saving.</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.card-body').appendChild(alertDiv);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+});
+</script>
+{% endblock %}
