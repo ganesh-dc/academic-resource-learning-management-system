@@ -345,9 +345,8 @@ class Payment(models.Model):
     
     PAYMENT_METHOD_CHOICES = [
         ('esewa', 'eSewa'),
-        ('imepay', 'IME Pay'),
-        ('khalti', 'Khalti'),
-        ('demo', 'Demo Payment'),
+        
+        
     ]
     
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments')
@@ -361,6 +360,9 @@ class Payment(models.Model):
     esewa_ref_id = models.CharField(max_length=100, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     failure_reason = models.TextField(blank=True)
+    transaction_uuid = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    khalti_pidx = models.CharField(max_length=100, blank=True, null=True)
+    payment_provider_data = models.JSONField(blank=True, null=True)
     
     class Meta:
         ordering = ['-payment_date']

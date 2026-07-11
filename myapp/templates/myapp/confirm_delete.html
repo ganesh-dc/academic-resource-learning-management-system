@@ -1,55 +1,310 @@
 {% extends 'myapp/base.html' %}
 
-{% block title %}Confirm Delete - ARLMS{% endblock %}
+{% block title %}
+    {% if is_admin_delete %}
+        Admin Delete Confirmation - ARLMS
+    {% else %}
+        Confirm Delete - ARLMS
+    {% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-md-8">
             <div class="card border-danger shadow">
-                <div class="card-header bg-danger text-white">
-                    <h4 class="mb-0">
-                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete
-                    </h4>
-                </div>
-                <div class="card-body text-center">
-                    <div class="mb-4">
-                        <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
-                        <h3>Are you sure?</h3>
-                        <p class="text-muted">
-                            You are about to delete the following resource:
-                        </p>
-                        <div class="alert alert-warning">
-                            <h5>{{ resource.title }}</h5>
-                            <p class="mb-1"><strong>Type:</strong> 
-                                {% if resource.is_premium %}
-                                <span class="badge bg-warning">Premium</span>
+                <!-- CARD HEADER - Different color for admin mode -->
+                <div class="card-header {% if is_admin_delete %}bg-danger{% else %}bg-warning{% endif %} text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">
+                                <i class="fas {% if is_admin_delete %}fa-user-shield{% else %}fa-exclamation-triangle{% endif %} me-2"></i>
+                                {% if is_admin_delete %}
+                                    ADMIN DELETE CONFIRMATION
                                 {% else %}
-                                <span class="badge bg-success">Free</span>
+                                    Confirm Delete
+                                {% endif %}
+                            </h4>
+                        </div>
+                        {% if is_admin_delete %}
+                            <span class="badge bg-light text-dark">
+                                <i class="fas fa-user-shield me-1"></i> Admin Mode
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- ADMIN WARNING SECTION -->
+                    {% if is_admin_delete %}
+                        <div class="alert alert-danger mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user-shield fa-2x me-3"></i>
+                                <div>
+                                    <h5 class="mb-1"><i class="fas fa-exclamation-triangle me-2"></i>ADMIN DELETE MODE</h5>
+                                    <p class="mb-0">
+                                        You are deleting this resource as an <strong>administrator</strong>.
+                                        This resource belongs to another user.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- RESOURCE DETAILS -->
+                    <div class="text-center mb-4">
+                        <div class="mb-3">
+                            {% if is_admin_delete %}
+                                <i class="fas fa-user-shield fa-4x text-danger mb-3"></i>
+                            {% else %}
+                                <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+                            {% endif %}
+                            
+                            <h3>
+                                {% if is_admin_delete %}
+                                    Delete Resource as Admin?
+                                {% else %}
+                                    Are you sure?
+                                {% endif %}
+                            </h3>
+                            
+                            <p class="text-muted">
+                                {% if is_admin_delete %}
+                                    You are about to delete another user's resource:
+                                {% else %}
+                                    You are about to delete your resource:
                                 {% endif %}
                             </p>
-                            <p class="mb-0"><strong>Uploaded:</strong> {{ resource.uploaded_date|date:"M d, Y" }}</p>
                         </div>
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-circle me-2"></i>
-                            <strong>Warning:</strong> This action cannot be undone!
+                        
+                        <!-- Resource Info Card -->
+                        <div class="card border-warning mb-3">
+                            <div class="card-header bg-warning text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-file-alt me-2"></i>
+                                    {{ resource.title }}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong><i class="fas fa-user me-2"></i>Owner:</strong>
+                                            {{ resource.uploaded_by.get_full_name|default:resource.uploaded_by.username }}
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong><i class="fas fa-tag me-2"></i>Type:</strong>
+                                            {% if resource.is_premium %}
+                                                <span class="badge bg-warning">Premium - ${{ resource.price }}</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Free</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong><i class="fas fa-calendar me-2"></i>Uploaded:</strong>
+                                            {{ resource.uploaded_date|date:"M d, Y" }}
+                                        </p>
+                                        <p class="mb-0">
+                                            <strong><i class="fas fa-download me-2"></i>Downloads:</strong>
+                                            <span class="badge bg-info">{{ resource.download_count|default:0 }}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Admin-specific owner info -->
+                                {% if is_admin_delete %}
+                                    <div class="mt-3 pt-3 border-top">
+                                        <h6 class="text-danger mb-2">
+                                            <i class="fas fa-info-circle me-2"></i>Resource Owner Details:
+                                        </h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p class="mb-1">
+                                                    <strong>Username:</strong> {{ resource.uploaded_by.username }}
+                                                </p>
+                                                <p class="mb-1">
+                                                    <strong>Email:</strong> {{ resource.uploaded_by.email }}
+                                                </p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-1">
+                                                    <strong>Role:</strong> 
+                                                    <span class="badge bg-secondary">{{ resource.uploaded_by.role|title }}</span>
+                                                </p>
+                                                <p class="mb-0">
+                                                    <strong>Joined:</strong> 
+                                                    {{ resource.uploaded_by.date_joined|date:"M d, Y" }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
+                        
+                        <!-- WARNING MESSAGE -->
+                        <div class="alert {% if is_admin_delete %}alert-danger{% else %}alert-warning{% endif %}">
+                            <div class="d-flex">
+                                <i class="fas fa-exclamation-circle me-3 mt-1"></i>
+                                <div>
+                                    <h5 class="mb-2">Warning</h5>
+                                    <p class="mb-1">
+                                        <i class="fas fa-times-circle me-1 text-danger"></i>
+                                        This action <strong>cannot be undone</strong>
+                                    </p>
+                                    <p class="mb-0">
+                                        <i class="fas fa-database me-1 text-danger"></i>
+                                        All associated data including:
+                                        <span class="badge bg-dark ms-2">File</span>
+                                        <span class="badge bg-dark ms-1">Downloads</span>
+                                        <span class="badge bg-dark ms-1">Feedback</span>
+                                        <span class="badge bg-dark ms-1">Payment Records</span>
+                                        will be permanently deleted.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Optional Reason for Admin (if you want to add it) -->
+                        {% if is_admin_delete %}
+                            <div class="mb-4">
+                                <label for="adminReason" class="form-label text-start d-block">
+                                    <i class="fas fa-comment me-2"></i>Reason for deletion (optional):
+                                </label>
+                                <textarea id="adminReason" class="form-control" rows="2" 
+                                          placeholder="Optional: Enter reason for admin deletion..."></textarea>
+                                <small class="text-muted d-block text-start mt-1">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    This will be logged in the system for audit purposes.
+                                </small>
+                            </div>
+                        {% endif %}
                     </div>
                     
+                    <!-- ACTION BUTTONS -->
                     <form method="POST">
                         {% csrf_token %}
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-danger btn-lg">
-                                <i class="fas fa-trash me-2"></i> Yes, Delete Resource
+                            <button type="submit" class="btn {% if is_admin_delete %}btn-danger{% else %}btn-warning{% endif %} btn-lg py-3">
+                                <i class="fas {% if is_admin_delete %}fa-user-shield{% else %}fa-trash{% endif %} me-2"></i>
+                                {% if is_admin_delete %}
+                                    CONFIRM ADMIN DELETE
+                                {% else %}
+                                    Yes, Delete My Resource
+                                {% endif %}
                             </button>
-                            <a href="{% url 'resource_detail' resource.id %}" class="btn btn-outline-secondary btn-lg">
-                                <i class="fas fa-times me-2"></i> Cancel
+                            
+                            <a href="{% url 'resource_detail' resource.id %}" class="btn btn-outline-secondary btn-lg py-3">
+                                <i class="fas fa-times me-2"></i> 
+                                Cancel and Go Back
                             </a>
                         </div>
                     </form>
+                    
+                    <!-- Additional Info for Admin -->
+                    {% if is_admin_delete %}
+                        <div class="mt-4 pt-3 border-top text-muted small">
+                            <p class="mb-1">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                <strong>Admin Action Logged:</strong> This deletion will be recorded in the system logs.
+                            </p>
+                            <p class="mb-0">
+                                <i class="fas fa-history me-2"></i>
+                                <strong>Timestamp:</strong> {{ now|date:"F d, Y H:i:s" }}
+                            </p>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        border-bottom: none;
+    }
+    
+    .btn-lg {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    
+    .alert {
+        border-radius: 8px;
+        border-left: 4px solid;
+    }
+    
+    .alert-danger {
+        border-left-color: #dc3545;
+    }
+    
+    .alert-warning {
+        border-left-color: #ffc107;
+    }
+    
+    .badge {
+        font-size: 0.85em;
+        padding: 0.35em 0.65em;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add confirmation for admin delete
+    const deleteForm = document.querySelector('form');
+    const deleteButton = deleteForm.querySelector('button[type="submit"]');
+    
+    deleteButton.addEventListener('click', function(e) {
+        {% if is_admin_delete %}
+            // Double confirmation for admin delete
+            const confirmation = confirm('⚠️ ADMIN DELETE CONFIRMATION\n\nAre you absolutely sure you want to delete this resource as an administrator?\n\nThis will permanently delete:\n• Resource file\n• All download records\n• All feedback\n• Payment records\n\nThis action cannot be undone!');
+            
+            if (!confirmation) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Optional: Log admin reason
+            const adminReason = document.getElementById('adminReason');
+            if (adminReason && adminReason.value.trim()) {
+                // You could send this to your server via AJAX or store it somewhere
+                console.log('Admin deletion reason:', adminReason.value.trim());
+                
+                // Add hidden input to form
+                const reasonInput = document.createElement('input');
+                reasonInput.type = 'hidden';
+                reasonInput.name = 'admin_reason';
+                reasonInput.value = adminReason.value.trim();
+                deleteForm.appendChild(reasonInput);
+            }
+        {% else %}
+            // Regular user confirmation
+            const confirmation = confirm('Are you sure you want to delete this resource?\n\nThis action cannot be undone!');
+            
+            if (!confirmation) {
+                e.preventDefault();
+                return false;
+            }
+        {% endif %}
+    });
+    
+    // Add warning for leaving page
+    window.addEventListener('beforeunload', function(e) {
+        // Only show warning if form has been interacted with
+        const textarea = document.getElementById('adminReason');
+        if (textarea && textarea.value.trim() !== '') {
+            e.preventDefault();
+            e.returnValue = 'You have entered a deletion reason. Are you sure you want to leave?';
+        }
+    });
+});
+</script>
 {% endblock %}

@@ -239,9 +239,16 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top">
         <div class="container">
+            <!-- ARLMS Logo - Redirects based on login status -->
+            {% if user.is_authenticated %}
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                <i class="fas fa-graduation-cap me-2"></i>ARLMS
+            </a>
+            {% else %}
             <a class="navbar-brand" href="{% url 'home' %}">
                 <i class="fas fa-graduation-cap me-2"></i>ARLMS
             </a>
+            {% endif %}
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -249,30 +256,38 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
+                    <!-- Only show Home link if user is NOT logged in -->
+                    {% if not user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">
                             <i class="fas fa-home me-1"></i>Home
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#about">
-                            <i class="fas fa-info-circle me-1"></i>About Us
-                        </a>
-                    </li>
-                    
-                    {% if user.is_authenticated %}
+                    {% else %}
+                    <!-- Show Dashboard link if user IS logged in -->
                     <li class="nav-item">
                         <a class="nav-link {% if 'dashboard' in request.path %}active{% endif %}" href="{% url 'dashboard' %}">
                             <i class="fas fa-tachometer-alt me-1"></i>Dashboard
                         </a>
                     </li>
-                    {% if user.role == 'teacher' %}
+                    {% endif %}
+                    
+                    <!-- About Us link (only shown when user is NOT logged in) -->
+                    {% if not user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">
+                            <i class="fas fa-info-circle me-1"></i>About Us
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Teacher Upload link (only when logged in as teacher) -->
+                    {% if user.is_authenticated and user.role == 'teacher' %}
                     <li class="nav-item">
                         <a class="nav-link {% if 'upload' in request.path %}active{% endif %}" href="{% url 'upload_resource' %}">
                             <i class="fas fa-upload me-1"></i>Upload
                         </a>
                     </li>
-                    {% endif %}
                     {% endif %}
                 </ul>
                 
@@ -402,7 +417,7 @@
                             <span>+977-9845556935</span>
                         </a>
                         
-                        <a href="https://www.google.com/maps/place/Kathmandu,+Nepal/@27.7089603,85.2845784,12z/data=!3m1!4b1!4m6!3m5!1s0x39eb198a307baabf:0xb5137c1bf18db1ea!8m2!3d27.7172453!4d85.3239605!16zL20vMDU3ZDk?entry=ttu" 
+                        <a href="https://www.google.com/maps/place/Kathmandu,+Nepal/@27.7089603,85.2845784,12z/data=!3m1!4b1!4m6!3m5!1s0x39eb198a307baabf:0xb5137c1bf18db1ea!8m2!3d27.7172453!4d85.3239605!16zL20vMDU7ZDk?entry=ttu" 
                            target="_blank" 
                            class="contact-link mb-1">
                             <i class="fas fa-map-marker-alt"></i>
@@ -563,10 +578,16 @@
                 link.classList.remove('active');
             });
             
-            // Set active for home
-            if (currentPath === '/' && !currentHash) {
-                const homeLink = document.querySelector('a[href="{% url 'home' %}"]');
-                if (homeLink) homeLink.classList.add('active');
+            // Set active for home (if home link exists)
+            const homeLink = document.querySelector('a[href="{% url 'home' %}"]');
+            if (homeLink && currentPath === '/' && !currentHash) {
+                homeLink.classList.add('active');
+            }
+            
+            // Set active for dashboard (if dashboard link exists)
+            const dashboardLink = document.querySelector('a[href="{% url 'dashboard' %}"]');
+            if (dashboardLink && currentPath.includes('/dashboard')) {
+                dashboardLink.classList.add('active');
             }
             
             // Set active for hash links (like #about)
@@ -595,13 +616,11 @@
                 });
             }
             
-            // FIX: Make About link work with smooth scroll
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    const targetId = this.getAttribute('href');
-                    if(targetId === '#') return;
-                    
-                    const targetElement = document.querySelector(targetId);
+            // FIX: Make About link work with smooth scroll (only if about link exists)
+            const aboutLink = document.querySelector('a[href="#about"]');
+            if (aboutLink) {
+                aboutLink.addEventListener('click', function (e) {
+                    const targetElement = document.querySelector('#about');
                     if(targetElement) {
                         e.preventDefault();
                         window.scrollTo({
@@ -610,7 +629,7 @@
                         });
                     }
                 });
-            });
+            }
         });
         
         // Simple cookie acceptance

@@ -20,15 +20,22 @@ from django.db import transaction
 from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import Group
-
-# Import your custom User model
-User = get_user_model()
-
-# Import your models
 from .models import User, Resource, Category, Payment, Feedback, Notification, OTPStorage, RegistrationAttempt, VerificationLog
 from .forms import ResourceUploadForm, CategoryForm, TeacherCreationForm
 
-# ========== ROLE-BASED DECORATORS ==========
+from .esewa import EsewaConfig
+import uuid
+from django.urls import reverse
+
+
+
+  
+
+
+
+User = get_user_model()
+
+
 def admin_required(view_func):
     """Decorator for admin-only views"""
     return user_passes_test(lambda u: u.is_authenticated and u.role == 'admin')(view_func)
@@ -40,19 +47,18 @@ def teacher_required(view_func):
 def student_required(view_func):
     """Decorator for student-only views"""
     return user_passes_test(lambda u: u.is_authenticated and u.role == 'student')(view_func)
-# ===========================================
+
 
 def home(request):
     """Home page view with statistics"""
     from django.db.models import Count
     
-    # Get statistics - Use get_user_model() directly
     total_resources = Resource.objects.count()
     active_students = User.objects.filter(role='student', is_active=True).count()
     teachers = User.objects.filter(role='teacher', is_active=True).count()
     courses = Category.objects.count()
     
-    # Get programs with resource counts
+   
     programs_data = []
     program_choices = User.PROGRAM_CHOICES
     
@@ -64,7 +70,7 @@ def home(request):
                 Q(title__icontains=name.split('(')[0])
             ).distinct().count()
             
-            # Get thumbnail resources for this program
+            
             program_resources = Resource.objects.filter(
                 Q(uploaded_by__program=code) |
                 Q(title__icontains=name.split('(')[0])
@@ -119,7 +125,7 @@ def dashboard(request):
     print("Redirecting to home (fallback)")
     return redirect('home')
 
-# ========== REGISTRATION AND OTP VIEWS ==========
+# REGISTRATION AND OTP VIEWS 
 
 # Simple in-memory storage for OTPs (for testing only)
 otp_storage = {}
@@ -149,22 +155,39 @@ def send_otp(request):
                 'verified': False
             }
             
-            # For testing: Print OTP to terminal
+            # Send OTP via Email
+            from django.core.mail import send_mail
+            from django.conf import settings
+            
+            subject = 'Your ARLMS Verification OTP'
+            message = f'Your OTP code is: {otp}\n\nThis OTP will expire in 5 minutes.\n\nIf you didn\'t request this, please ignore this email.'
+            from_email = settings.DEFAULT_FROM_EMAIL
+            recipient_list = [email]
+            
+            send_mail(
+                subject,
+                message,
+                from_email,
+                recipient_list,
+                fail_silently=False,
+            )
+            
+            # Keep console print for debugging
             print("\n" + "="*50)
-            print("OTP FOR TESTING:")
+            print("OTP SENT VIA EMAIL:")
             print(f"Email: {email}")
             print(f"OTP: {otp}")
             print("="*50 + "\n")
             
             return JsonResponse({
                 'success': True, 
-                'message': 'OTP sent successfully',
-                'otp': otp  # Sending OTP back for testing
+                'message': 'OTP sent successfully to your email',
+                # Remove 'otp': otp from production - only for testing
             })
             
         except Exception as e:
             print(f"Error sending OTP: {e}")
-            return JsonResponse({'success': False, 'error': str(e)})
+            return JsonResponse({'success': False, 'error': f'Failed to send email: {str(e)}'})
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
@@ -397,6 +420,9 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
+
+
+
 # ========== PASSWORD RESET VIEWS ==========
 
 def forgot_password_view(request):
@@ -593,6 +619,7 @@ def admin_dashboard(request):
     }
     
     return render(request, 'myapp/admin_dashboard.html', context)
+
 
 @login_required
 @teacher_required
@@ -870,45 +897,145 @@ def payment_options(request, resource_id):
     }
     return render(request, 'myapp/payment_options.html', context)
 
-@login_required
-@student_required
-def demo_payment(request, resource_id):
-    """Demo payment for testing"""
+
+
+
+def initiate_esewa_payment(request, resource_id):
+    """
+    When user clicks eSewa, this creates payment record
+    and redirects to REAL eSewa payment page
+    """
+    from django.shortcuts import get_object_or_404
+    from django.urls import reverse
+    from .models import Resource, Payment
+    
+    # 1. Get the resource
     resource = get_object_or_404(Resource, id=resource_id)
     
-    if not resource.is_premium:
-        messages.info(request, 'This resource is already free!')
-        return redirect('resource_detail', resource_id=resource_id)
+    # 2. Generate unique transaction ID
+    transaction_uuid = str(uuid.uuid4())
     
-    existing_payment = Payment.objects.filter(
-        student=request.user,
-        resource=resource,
-        status='completed'
-    ).exists()
-    
-    if existing_payment:
-        messages.info(request, 'You already purchased this resource!')
-        return redirect('resource_detail', resource_id=resource_id)
-    
+    # 3. Create payment record in database (CORRECT FIELDS)
     payment = Payment.objects.create(
-        student=request.user,
+        student=request.user,  # ✅ Use "student" not "user"
         resource=resource,
         amount=resource.price,
-        status='completed',
-        payment_method='demo',
-        transaction_id=f"DEMO_{int(time.time())}"
+        status='pending',
+        payment_method='esewa'
     )
     
-    Notification.objects.create(
-        sender=request.user,
-        receiver=resource.uploaded_by,
-        message=f"Student {request.user.username} DEMO purchased your resource: {resource.title} (${resource.price})"
+    # 4. Temporarily store transaction_uuid (until migration)
+    # You need to run migrations after adding transaction_uuid field
+    payment.transaction_uuid = transaction_uuid
+    payment.save()
+    
+    # 5. Prepare success/failure URLs
+    success_url = f"http://127.0.0.1:8000/payment/esewa/success/?transaction_uuid={transaction_uuid}"
+    failure_url = f"http://127.0.0.1:8000/payment/esewa/failure/?transaction_uuid={transaction_uuid}"
+    
+    print(f"✅ eSewa will redirect to: {success_url}")
+    
+    # 6. Get eSewa payment data
+    esewa_data = EsewaConfig.get_esewa_payload(
+        amount=resource.price,
+        transaction_uuid=transaction_uuid,
+        success_url=success_url,
+        failure_url=failure_url
     )
     
-    messages.success(request, f'✅ Demo purchase successful! "{resource.title}" is now unlocked!')
-    return redirect('resource_detail', resource_id=resource_id)
-
-# ========== DOWNLOAD VIEW ==========
+    # 7. Render page that auto-submits to eSewa
+    return render(request, 'myapp/esewa_redirect.html',  {
+        'esewa_url': EsewaConfig.ESewa_URL,
+        'esewa_data': esewa_data,
+        'merchant_id': EsewaConfig.MERCHANT_ID,
+        'payment': payment,
+        'resource': resource
+    })
+@csrf_exempt
+def esewa_success(request):
+    """Handle eSewa success callback - SIMPLIFIED FIX"""
+    print(f"\n=== eSewa SUCCESS CALLBACK ===")
+    print(f"URL: {request.get_full_path()}")
+    print(f"GET params: {dict(request.GET)}")
+    
+    # Get the transaction_uuid from URL parameters
+    transaction_uuid = request.GET.get('transaction_uuid', '')
+    
+    if not transaction_uuid:
+        # Try to extract from referrer or other parameters
+        print("No transaction_uuid found, trying alternative methods...")
+        return redirect('payment_failed')
+    
+    try:
+        # Find the payment - try multiple methods
+        payment = None
+        
+        # Method 1: Direct lookup
+        try:
+            payment = Payment.objects.get(transaction_uuid=transaction_uuid)
+        except Payment.DoesNotExist:
+            # Method 2: Look for payments with matching transaction_id
+            payment = Payment.objects.filter(transaction_id=transaction_uuid).first()
+        
+        if not payment:
+            # Method 3: Get latest pending payment for current user
+            if request.user.is_authenticated:
+                payment = Payment.objects.filter(
+                    student=request.user,
+                    status='pending'
+                ).order_by('-payment_date').first()
+                if payment:
+                    print(f"Found pending payment by user: {payment.id}")
+                    payment.transaction_uuid = transaction_uuid
+                    payment.save()
+        
+        if payment:
+            # Update payment status
+            payment.status = 'completed'
+            payment.save()
+            print(f"Payment {payment.id} marked as completed")
+            
+            # Create notification for teacher
+            try:
+                Notification.objects.create(
+                    sender=payment.student,
+                    receiver=payment.resource.uploaded_by,
+                    notification_type='purchase',
+                    message=f"Student {payment.student.username} purchased your resource: {payment.resource.title}",
+                    resource=payment.resource
+                )
+            except Exception as e:
+                print(f"Error creating notification: {e}")
+            
+            # Redirect to success page
+            return redirect('payment_success', payment_id=payment.id)
+        else:
+            print(f"No payment found for UUID: {transaction_uuid}")
+            messages.error(request, "Payment record not found")
+            return redirect('student_dashboard')
+            
+    except Exception as e:
+        print(f"Error in esewa_success: {e}")
+        messages.error(request, f"Payment processing error: {str(e)}")
+        return redirect('student_dashboard')
+@csrf_exempt
+def esewa_failure(request):
+    """Handle eSewa failure callback"""
+    transaction_uuid = request.GET.get('transaction_uuid', '')
+    
+    if transaction_uuid:
+        try:
+            payment = Payment.objects.get(transaction_uuid=transaction_uuid)
+            payment.status = 'failed'
+            payment.save()
+            
+            # Use your existing payment_failed.html template
+            return redirect('payment_failed', payment_id=payment.id)
+            
+        except Payment.DoesNotExist:
+            messages.error(request, 'Payment not found')
+    
+    return redirect('student_dashboard')
 
 @login_required
 def download_resource(request, resource_id):
@@ -1019,23 +1146,40 @@ def mark_notification_read(request, notification_id):
 
 @login_required
 def view_profile(request, user_id=None):
-    """View user profile"""
+    """View user profile - accessible by admins, the user themselves, and students viewing teacher profiles"""
+    # If no user_id is provided, show current user's profile
     if user_id is None:
         user = request.user
     else:
-        if request.user.role == 'admin' or request.user.id == user_id:
-            user = get_object_or_404(User, id=user_id)
-        else:
+        user = get_object_or_404(User, id=user_id)
+        
+        # Check if user has permission to view other profiles
+        # Allow if:
+        # 1. User is admin
+        # 2. User is viewing their own profile
+        # 3. Student is viewing a teacher's profile (for resource browsing)
+        # 4. Teacher is viewing another teacher's profile (for collaboration)
+        
+        can_view = (
+            request.user.role == 'admin' or 
+            request.user.id == user_id or
+            (request.user.role == 'student' and user.role == 'teacher') or
+            (request.user.role == 'teacher' and user.role == 'teacher')
+        )
+        
+        if not can_view:
             messages.error(request, 'You do not have permission to view this profile.')
             return redirect('dashboard')
     
+    # Get user's resources if they are a teacher
     uploaded_resources = []
     if user.role == 'teacher':
         uploaded_resources = Resource.objects.filter(uploaded_by=user).order_by('-uploaded_date')[:10]
     
+    # Get user's purchases if they are a student
     purchases = []
     if user.role == 'student':
-        purchases = Payment.objects.filter(student=user, status='completed').select_related('resource')[:10]
+        purchases = Payment.objects.filter(student=user, status='completed')[:10]
     
     context = {
         'profile_user': user,
@@ -1044,7 +1188,6 @@ def view_profile(request, user_id=None):
     }
     
     return render(request, 'myapp/profile.html', context)
-
 def edit_profile(request):
     if request.method == 'POST':
         user = request.user
@@ -1585,11 +1728,17 @@ def payment_success(request, payment_id):
         payment.status = 'completed'
         payment.save()
         
-        Notification.objects.create(
-            sender=request.user,
-            receiver=payment.resource.uploaded_by,
-            message=f"Student {request.user.username} purchased your resource: {payment.resource.title}"
-        )
+        # **CRITICAL: Create purchase notification for teacher**
+        try:
+            Notification.objects.create(
+                sender=request.user,
+                receiver=payment.resource.uploaded_by,
+                notification_type='purchase',
+                message=f"Student {request.user.username} purchased your resource: {payment.resource.title}",
+                resource=payment.resource
+            )
+        except Exception as e:
+            print(f"Error creating purchase notification: {e}")
         
         messages.success(request, 'Payment successful! You can now download the resource.')
     
@@ -1597,7 +1746,6 @@ def payment_success(request, payment_id):
         'payment': payment,
     }
     return render(request, 'myapp/payment_success.html', context)
-
 @login_required
 def payment_failed(request, payment_id):
     """Handle failed payment"""
@@ -1664,83 +1812,73 @@ def payment_details_api(request, payment_id):
         
     except Exception as e:
         return JsonResponse({
+
+            
             'success': False, 
             'error': str(e)
         }, status=500)
 
 @login_required
-@teacher_required  
 def delete_resource(request, resource_id):
-    """Delete a resource (teacher only)"""
-    resource = get_object_or_404(Resource, id=resource_id, uploaded_by=request.user)
+    """Delete a resource (for both teacher owner AND admin)"""
+    resource = get_object_or_404(Resource, id=resource_id)
+    
+    # Check permission: Resource owner OR admin
+    if not (request.user == resource.uploaded_by or request.user.role == 'admin'):
+        messages.error(request, "You don't have permission to delete this resource.")
+        return redirect('resource_detail', resource_id=resource_id)
+    
+    # Check if it's admin delete (admin deleting someone else's resource)
+    is_admin_delete = request.user.role == 'admin' and request.user != resource.uploaded_by
     
     if request.method == 'POST':
+        # Delete file from filesystem
         if resource.file and os.path.exists(resource.file.path):
             os.remove(resource.file.path)
         
         resource_title = resource.title
         resource.delete()
         
-        messages.success(request, f'Resource "{resource_title}" deleted successfully!')
-        return redirect('teacher_dashboard')
+        if is_admin_delete:
+            messages.success(request, f'Resource "{resource_title}" deleted by admin successfully!')
+        else:
+            messages.success(request, f'Resource "{resource_title}" deleted successfully!')
+        
+        # Redirect based on user role
+        if request.user.role == 'admin':
+            return redirect('manage_resources')
+        else:
+            return redirect('teacher_dashboard')
     
-    return render(request, 'myapp/confirm_delete.html', {'resource': resource})
-
-@login_required
-@admin_required
-def manage_resources(request):
-    """Admin view to manage all resources"""
-    category_filter = request.GET.get('category', '')
-    search_query = request.GET.get('search', '')
-    status_filter = request.GET.get('status', '')
-    
-    resources = Resource.objects.all().order_by('-uploaded_date')
-    
-    if category_filter:
-        resources = resources.filter(category__id=category_filter)
-    
-    if status_filter:
-        if status_filter == 'free':
-            resources = resources.filter(price=0)
-        elif status_filter == 'premium':
-            resources = resources.filter(price__gt=0)
-    
-    if search_query:
-        resources = resources.filter(
-            Q(title__icontains=search_query) |
-            Q(description__icontains=search_query) |
-            Q(uploaded_by__username__icontains=search_query)
-        )
-    
-    categories = Category.objects.all()
-    
-    paginator = Paginator(resources, 25)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
+    # If GET request, show confirmation page
     context = {
-        'resources': page_obj,
-        'categories': categories,
-        'total_resources': resources.count(),
-        'free_resources': resources.filter(price=0).count(),
-        'premium_resources': resources.filter(price__gt=0).count(),
+        'resource': resource,
+        'is_admin_delete': is_admin_delete,
+        'now': timezone.now(),
     }
-    
-    return render(request, 'myapp/manage_resources.html', context)
-
+    return render(request, 'myapp/confirm_delete.html', context)
 @login_required
-@teacher_required
 def edit_resource(request, resource_id):
-    """Edit a resource (teacher only)"""
-    resource = get_object_or_404(Resource, id=resource_id, uploaded_by=request.user)
+    """Edit a resource (for both teacher owner AND admin)"""
+    resource = get_object_or_404(Resource, id=resource_id)
+    
+    # Check permission: Resource owner OR admin
+    if not (request.user == resource.uploaded_by or request.user.role == 'admin'):
+        messages.error(request, "You don't have permission to edit this resource.")
+        return redirect('resource_detail', resource_id=resource_id)
+    
+    # Check if it's admin edit (admin editing someone else's resource)
+    is_admin_edit = request.user.role == 'admin' and request.user != resource.uploaded_by
     
     if request.method == 'POST':
+        # Get form data
         title = request.POST.get('title')
         description = request.POST.get('description')
         category_id = request.POST.get('category')
         is_premium = request.POST.get('is_premium') == 'true'
         price = request.POST.get('price', 0)
         
+        # Update resource
         resource.title = title
         resource.description = description
         resource.is_premium = is_premium
@@ -1750,6 +1888,7 @@ def edit_resource(request, resource_id):
         else:
             resource.price = 0
         
+        # Update category if selected
         if category_id:
             try:
                 category = Category.objects.get(id=category_id)
@@ -1759,20 +1898,28 @@ def edit_resource(request, resource_id):
         else:
             resource.category = None
         
+        # Handle file upload if new file provided
         if 'file' in request.FILES:
+            # Delete old file if exists
             if resource.file and os.path.exists(resource.file.path):
                 os.remove(resource.file.path)
             resource.file = request.FILES['file']
         
         resource.save()
         
-        messages.success(request, f'Resource "{resource.title}" updated successfully!')
+        if is_admin_edit:
+            messages.success(request, f'Resource "{resource.title}" updated by admin successfully!')
+        else:
+            messages.success(request, f'Resource "{resource.title}" updated successfully!')
+        
         return redirect('resource_detail', resource_id=resource.id)
     
+    # GET request - show edit form
     categories = Category.objects.all()
     context = {
         'resource': resource,
         'categories': categories,
+        'is_admin_edit': is_admin_edit,
     }
     return render(request, 'myapp/edit_resource.html', context)
 
@@ -1883,24 +2030,6 @@ def delete_resource_admin(request, resource_id):
     return render(request, 'myapp/admin_confirm_delete.html', {'resource': resource})
 
 
-@login_required
-@student_required
-def purchase_resource(request, resource_id):
-    """Handle resource purchase - redirects to payment options"""
-    resource = get_object_or_404(Resource, id=resource_id)
-    
-    # Check if already purchased
-    if Payment.objects.filter(
-        student=request.user,
-        resource=resource,
-        status='completed'
-    ).exists():
-        messages.info(request, 'You already own this resource!')
-        return redirect('resource_detail', resource_id=resource_id)
-    
-    # Redirect to payment options
-    return redirect('payment_options', resource_id=resource_id)
-
 # ========== MISSING VIEWS NEEDED FOR YOUR URLS.PY ==========
 
 @login_required
@@ -1921,138 +2050,6 @@ def purchase_resource(request, resource_id):
     # Redirect to payment options
     return redirect('payment_options', resource_id=resource_id)
 
-@login_required
-@teacher_required
-def edit_resource(request, resource_id):
-    """Edit a resource (teacher only)"""
-    resource = get_object_or_404(Resource, id=resource_id, uploaded_by=request.user)
-    
-    if request.method == 'POST':
-        # Get form data
-        title = request.POST.get('title')
-        description = request.POST.get('description')
-        category_id = request.POST.get('category')
-        is_premium = request.POST.get('is_premium') == 'true'
-        price = request.POST.get('price', 0)
-        
-        # Update resource
-        resource.title = title
-        resource.description = description
-        resource.is_premium = is_premium
-        
-        if is_premium:
-            resource.price = price
-        else:
-            resource.price = 0
-        
-        # Update category if selected
-        if category_id:
-            try:
-                category = Category.objects.get(id=category_id)
-                resource.category = category
-            except Category.DoesNotExist:
-                resource.category = None
-        else:
-            resource.category = None
-        
-        # Handle file upload if new file provided
-        if 'file' in request.FILES:
-            # Delete old file if exists
-            if resource.file and os.path.exists(resource.file.path):
-                os.remove(resource.file.path)
-            resource.file = request.FILES['file']
-        
-        resource.save()
-        
-        messages.success(request, f'Resource "{resource.title}" updated successfully!')
-        return redirect('resource_detail', resource_id=resource.id)
-    
-    # GET request - show edit form
-    categories = Category.objects.all()
-    context = {
-        'resource': resource,
-        'categories': categories,
-    }
-    return render(request, 'myapp/edit_resource.html', context)
-
-@login_required  
-def delete_resource(request, resource_id):
-    """Delete a resource (teacher only)"""
-    resource = get_object_or_404(Resource, id=resource_id, uploaded_by=request.user)
-    
-    if request.method == 'POST':
-        # Delete file from filesystem
-        if resource.file and os.path.exists(resource.file.path):
-            os.remove(resource.file.path)
-        
-        resource_title = resource.title
-        resource.delete()
-        
-        messages.success(request, f'Resource "{resource_title}" deleted successfully!')
-        return redirect('teacher_dashboard')
-    
-    # If GET request, show confirmation page
-    return render(request, 'myapp/confirm_delete.html', {'resource': resource})
-
-@login_required
-@admin_required
-def edit_user_admin(request, user_id):
-    """Admin edit user details"""
-    user = get_object_or_404(User, id=user_id)
-    
-    if request.method == 'POST':
-        try:
-            # Update basic user fields
-            user.username = request.POST.get('username', user.username)
-            user.email = request.POST.get('email', user.email)
-            user.first_name = request.POST.get('first_name', '')
-            user.last_name = request.POST.get('last_name', '')
-            
-            # Update role
-            new_role = request.POST.get('role', user.role)
-            user.role = new_role
-            
-            # Update active status
-            is_active = request.POST.get('is_active') == 'true'
-            user.is_active = is_active
-            
-            # Update contact info
-            user.phone = request.POST.get('phone', '')
-            user.address = request.POST.get('address', '')
-            
-            # Update student-specific fields if role is student
-            if new_role == 'student':
-                user.student_id = request.POST.get('student_id', '')
-                user.program = request.POST.get('program', '')
-                
-                semester = request.POST.get('semester', '')
-                user.semester = int(semester) if semester.isdigit() else None
-                
-                user.shift = request.POST.get('shift', '')
-            else:
-                # Clear student fields if changing role from student
-                user.student_id = ''
-                user.program = ''
-                user.semester = None
-                user.shift = ''
-            
-            user.save()
-            messages.success(request, f'User {user.username} updated successfully!')
-            
-            # Send notification to user
-            Notification.objects.create(
-                sender=request.user,
-                receiver=user,
-                message=f"Admin {request.user.username} updated your account details"
-            )
-            
-            return redirect('manage_users')
-            
-        except Exception as e:
-            messages.error(request, f'Error updating user: {str(e)}')
-    
-    context = {'user': user}
-    return render(request, 'myapp/edit_user_admin.html', context)
 
 @login_required
 @admin_required
@@ -2100,24 +2097,6 @@ def manage_resources(request):
     }
     
     return render(request, 'myapp/manage_resources.html', context)
-
-@login_required
-@admin_required
-def delete_resource_admin(request, resource_id):
-    """Admin can delete any resource"""
-    resource = get_object_or_404(Resource, id=resource_id)
-    
-    if request.method == 'POST':
-        if resource.file and os.path.exists(resource.file.path):
-            os.remove(resource.file.path)
-        
-        resource_title = resource.title
-        resource.delete()
-        
-        messages.success(request, f'Resource "{resource_title}" deleted successfully!')
-        return redirect('manage_resources')
-    
-    return render(request, 'myapp/admin_confirm_delete.html', {'resource': resource})
 
 @login_required
 @admin_required

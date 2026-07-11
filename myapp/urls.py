@@ -55,6 +55,13 @@ urlpatterns = [
     path('payment-success/<int:payment_id>/', views.payment_success, name='payment_success'),
     path('payment-failed/<int:payment_id>/', views.payment_failed, name='payment_failed'),
     path('api/payment-details/<int:payment_id>/', views.payment_details_api, name='payment_details_api'),
+     # eSewa Payment URLs
+    path('payment/esewa/<int:resource_id>/', views.initiate_esewa_payment, name='initiate_esewa_payment'),
+    path('payment/esewa/success/', views.esewa_success, name='esewa_success'),
+    path('payment/esewa/failure/', views.esewa_failure, name='esewa_failure'),
+    
+ 
+    
     
     # Feedback & Notifications
     path('feedback/<int:resource_id>/', views.submit_feedback, name='submit_feedback'),
@@ -68,6 +75,8 @@ urlpatterns = [
     path('toggle-user-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
     path('delete-resource-admin/<int:resource_id>/', views.delete_resource_admin, name='delete_resource_admin'),
     path('update-payment-status/<int:payment_id>/', views.update_payment_status, name='update_payment_status'),
+
+
     
     
     # Admin features

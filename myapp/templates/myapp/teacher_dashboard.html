@@ -305,9 +305,7 @@
                         {% if unread_count > 0 and recent_notifications %}
                         <div class="notification-actions">
                             <!-- Simple link for Mark all read -->
-                            <a href="{% url 'mark_notification_read' 0 %}?mark_all=true" class="btn btn-sm btn-outline-secondary">
-                                <i class="fas fa-check-double"></i> Mark all read
-                            </a>
+                            
                         </div>
                         {% endif %}
                     </div>
@@ -426,28 +424,7 @@
                 </div>
             </div>
 
-            <!-- Quick Actions - Only 2 buttons -->
-            <div class="card card-hover mt-4">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="fas fa-bolt me-2 text-primary"></i>
-                        Quick Actions
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <a href="{% url 'upload_resource' %}" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-upload me-1"></i>Upload
-                            </a>
-                        </div>
-                        <div class="col-6">
-                            <a href="{% url 'my_resources' %}" class="btn btn-outline-success w-100">
-                                <i class="fas fa-folder me-1"></i>All Resources
-                            </a>
-                        </div>
-                    </div>
-                </div>
+            
             </div>
         </div>
     </div>

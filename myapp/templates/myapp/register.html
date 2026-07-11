@@ -487,21 +487,18 @@ document.getElementById('sendOtpBtn').addEventListener('click', function() {
             // Show OTP section
             document.getElementById('otpSection').style.display = 'block';
             
-            // Store OTP in hidden field (for client-side verification)
-            document.getElementById('generatedOtp').value = data.otp;
-            
-            // Show success message
+            // Show success message (OTP is NOT sent in response for security)
             const otpMessage = document.getElementById('otpMessage');
-            otpMessage.textContent = 'OTP sent! Check terminal for OTP: ' + data.otp;
+            otpMessage.textContent = 'OTP sent to your email! Check your inbox.';
             otpMessage.className = 'text-success';
             
             // Update button
             this.innerHTML = '<i class="fas fa-check me-1"></i> OTP Sent';
             this.className = 'btn btn-outline-success';
             
-            // Log to console for testing
-            console.log('OTP sent to ' + email + ': ' + data.otp);
-            console.log('AJAX Response: OTP sent successfully');
+            // Log to console for debugging
+            console.log('OTP sent to ' + email);
+            console.log('AJAX Response: OTP sent successfully via email');
             
             // Re-enable button after 30 seconds
             setTimeout(() => {
@@ -540,8 +537,8 @@ document.getElementById('sendOtpBtn').addEventListener('click', function() {
 // Verify OTP Button
 document.getElementById('verifyOtpBtn').addEventListener('click', function() {
     const enteredOtp = document.getElementById('otpInput').value.trim();
-    const generatedOtp = document.getElementById('generatedOtp').value;
     const otpMessage = document.getElementById('otpMessage');
+    const email = document.getElementById('email').value.trim();
     
     if (!enteredOtp) {
         otpMessage.textContent = 'Please enter the OTP';
@@ -555,73 +552,83 @@ document.getElementById('verifyOtpBtn').addEventListener('click', function() {
         return;
     }
     
-    // For testing: verify locally
-    // In production, you would verify via AJAX to your Django view
-    if (enteredOtp === generatedOtp) {
-        // OTP verified successfully
-        otpMessage.textContent = '✓ Email verified successfully!';
-        otpMessage.className = 'text-success';
-        
-        // Set verified flag
-        document.getElementById('otpVerified').value = '1';
-        
-        // Disable OTP inputs
-        document.getElementById('otpInput').disabled = true;
-        this.disabled = true;
-        
-        // Enable submit button
-        document.getElementById('submitBtn').disabled = false;
-        
-        console.log('OTP verification: SUCCESS');
-        
-        // Optionally verify with server (for production)
-        /*
-        fetch('/verify-otp/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                'email': document.getElementById('email').value.trim(),
-                'otp': enteredOtp
-            })
+    // Show loading
+    const originalText = this.innerHTML;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Verifying...';
+    this.disabled = true;
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Verify with server
+    fetch('/verify-otp/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            'email': email,
+            'otp': enteredOtp
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                otpMessage.textContent = '✓ Email verified successfully!';
-                otpMessage.className = 'text-success';
-                document.getElementById('otpVerified').value = '1';
-                document.getElementById('otpInput').disabled = true;
-                this.disabled = true;
-                document.getElementById('submitBtn').disabled = false;
-            } else {
-                otpMessage.textContent = '✗ ' + data.error;
-                otpMessage.className = 'text-danger';
-            }
-        });
-        */
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // OTP verified successfully
+            otpMessage.textContent = '✓ Email verified successfully!';
+            otpMessage.className = 'text-success';
+            
+            // Set verified flag
+            document.getElementById('otpVerified').value = '1';
+            
+            // Disable OTP input but NOT the verify button
+            document.getElementById('otpInput').disabled = true;
+            
+            // Change verify button to show success (NOT disabled)
+            this.innerHTML = '<i class="fas fa-check me-1"></i> Verified';
+            this.className = 'btn btn-success w-100';
+            this.disabled = false; // Keep button enabled but show verified state
+            
+            // Enable submit button
+            document.getElementById('submitBtn').disabled = false;
+            
+            console.log('OTP verification: SUCCESS');
+        } else {
+            // Show error
+            otpMessage.textContent = '✗ ' + data.error;
+            otpMessage.className = 'text-danger';
+            this.innerHTML = originalText;
+            this.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('AJAX Error:', error);
         
-    } else {
-        otpMessage.textContent = '✗ Invalid OTP. Please try again.';
+        // Show error message
+        otpMessage.textContent = '✗ Verification failed. Please try again.';
         otpMessage.className = 'text-danger';
-        console.log('OTP verification: FAILED');
-    }
+        this.innerHTML = originalText;
+        this.disabled = false;
+    });
 });
 
 // Clear OTP verification when email changes
 document.getElementById('email').addEventListener('input', function() {
     // Reset OTP verification
     document.getElementById('otpVerified').value = '0';
-    document.getElementById('generatedOtp').value = '';
     
     // Reset OTP section
     document.getElementById('otpSection').style.display = 'none';
     document.getElementById('otpInput').value = '';
     document.getElementById('otpInput').disabled = false;
-    document.getElementById('verifyOtpBtn').disabled = false;
     document.getElementById('otpMessage').textContent = '';
+    
+    // Reset verify button to original state
+    const verifyBtn = document.getElementById('verifyOtpBtn');
+    verifyBtn.innerHTML = 'Verify';
+    verifyBtn.className = 'btn btn-success w-100';
+    verifyBtn.disabled = false;
     
     // Reset send button
     const sendBtn = document.getElementById('sendOtpBtn');

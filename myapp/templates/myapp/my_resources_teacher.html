@@ -4,132 +4,190 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <!-- Simple Header -->
+    <!-- Enhanced Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2><i class="fas fa-folder-open text-primary me-2"></i>All My Resources</h2>
-                    <p class="text-muted mb-0">Manage your teaching resources</p>
+                    <h2 class="fw-bold"><i class="fas fa-folder-open text-primary me-2"></i>My Teaching Resources</h2>
+                    <p class="text-muted mb-0">Manage all your uploaded resources in one place</p>
                 </div>
                 <div>
-                    <a href="{% url 'upload_resource' %}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Upload New Resource
-                    </a>
-                    <a href="{% url 'teacher_dashboard' %}" class="btn btn-outline-secondary ms-2">
+                    <a href="{% url 'teacher_dashboard' %}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
                     </a>
                 </div>
             </div>
-            <hr>
         </div>
     </div>
 
-    <!-- Simple Stats -->
+    <!-- Enhanced Stats Cards -->
     <div class="row mb-4">
-        <div class="col-md-3 col-6 mb-3">
-            <div class="card text-center">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-primary border-4 shadow-sm h-100 py-2">
                 <div class="card-body">
-                    <h3 class="text-primary">{{ resource_count|default:0 }}</h3>
-                    <p class="text-muted mb-0">Total Resources</p>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">Total Resources</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ resource_count|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-6 mb-3">
-            <div class="card text-center">
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-warning border-4 shadow-sm h-100 py-2">
                 <div class="card-body">
-                    <h3 class="text-warning">{{ premium_count|default:0 }}</h3>
-                    <p class="text-muted mb-0">Premium</p>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">Premium Resources</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ premium_count|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-crown fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-6 mb-3">
-            <div class="card text-center">
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-success border-4 shadow-sm h-100 py-2">
                 <div class="card-body">
-                    <h3 class="text-success">{{ free_count|default:0 }}</h3>
-                    <p class="text-muted mb-0">Free</p>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">Free Resources</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ free_count|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-unlock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-6 mb-3">
-            <div class="card text-center">
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start border-info border-4 shadow-sm h-100 py-2">
                 <div class="card-body">
-                    <h3 class="text-info">{{ total_downloads|default:0 }}</h3>
-                    <p class="text-muted mb-0">Total Downloads</p>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">Total Downloads</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ total_downloads|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-download fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Resources List - Simple Table -->
+    <!-- Resources List - Enhanced Table -->
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-body">
+            <div class="card shadow border-0">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">All Resources</h5>
+                        <div class="btn-group" role="group">
+                            <a href="?filter=all" class="btn btn-sm {% if not request.GET.filter or request.GET.filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                All ({{ resource_count }})
+                            </a>
+                            <a href="?filter=premium" class="btn btn-sm {% if request.GET.filter == 'premium' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                                Premium ({{ premium_count }})
+                            </a>
+                            <a href="?filter=free" class="btn btn-sm {% if request.GET.filter == 'free' %}btn-success{% else %}btn-outline-success{% endif %}">
+                                Free ({{ free_count }})
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
                     {% if resources %}
                         <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <th>Resource Title</th>
-                                        <th class="text-center">Type</th>
-                                        <th class="text-center">Views</th>
-                                        <th class="text-center">Downloads</th>
-                                        <th>Upload Date</th>
-                                        <th>Status</th>
-                                        <th class="text-center">Actions</th>
+                                        <th class="ps-4 fw-bold text-uppercase text-secondary text-xs">Resource</th>
+                                        <th class="fw-bold text-uppercase text-secondary text-xs text-center">Type</th>
+                                        <th class="fw-bold text-uppercase text-secondary text-xs text-center">Views</th>
+                                        <th class="fw-bold text-uppercase text-secondary text-xs text-center">Downloads</th>
+                                        <th class="fw-bold text-uppercase text-secondary text-xs">Uploaded</th>
+                                        <th class="fw-bold text-uppercase text-secondary text-xs text-center pe-4">View Details</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for resource in resources %}
-                                    <tr>
-                                        <td>
-                                            <a href="{% url 'resource_detail' resource.id %}" class="text-decoration-none">
-                                                <i class="fas fa-file me-2"></i>
-                                                {{ resource.title|truncatechars:40 }}
-                                            </a>
-                                            {% if resource.subject %}
-                                            <br><small class="text-muted">{{ resource.subject }}</small>
-                                            {% endif %}
+                                    <tr class="border-bottom">
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-start">
+                                                <div class="me-3">
+                                                    {% if resource.file.name|lower|slice:'-4:' == '.pdf' %}
+                                                        <i class="fas fa-file-pdf text-danger fs-4"></i>
+                                                    {% elif resource.file.name|lower|slice:'-5:' == '.docx' or resource.file.name|lower|slice:'-4:' == '.doc' %}
+                                                        <i class="fas fa-file-word text-primary fs-4"></i>
+                                                    {% elif resource.file.name|lower|slice:'-5:' == '.pptx' or resource.file.name|lower|slice:'-4:' == '.ppt' %}
+                                                        <i class="fas fa-file-powerpoint text-danger fs-4"></i>
+                                                    {% elif resource.file.name|lower|slice:'-5:' == '.xlsx' or resource.file.name|lower|slice:'-4:' == '.xls' %}
+                                                        <i class="fas fa-file-excel text-success fs-4"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-file text-secondary fs-4"></i>
+                                                    {% endif %}
+                                                </div>
+                                                <div>
+                                                    <a href="{% url 'resource_detail' resource.id %}" class="text-decoration-none text-dark fw-bold mb-1 d-block">
+                                                        {{ resource.title|truncatechars:50 }}
+                                                    </a>
+                                                    {% if resource.subject %}
+                                                    <small class="text-muted d-block">
+                                                        <i class="fas fa-tag me-1"></i>{{ resource.subject }}
+                                                    </small>
+                                                    {% endif %}
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-file me-1"></i>{{ resource.file.name|slice:"-20:" }}
+                                                    </small>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="text-center">
                                             {% if resource.is_premium %}
-                                            <span class="badge bg-warning">Premium</span>
+                                            <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2">
+                                                <i class="fas fa-crown me-1"></i>Premium
+                                            </span>
                                             {% else %}
-                                            <span class="badge bg-success">Free</span>
+                                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2">
+                                                <i class="fas fa-unlock me-1"></i>Free
+                                            </span>
                                             {% endif %}
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge bg-info">{{ resource.views|default:0 }}</span>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-secondary">{{ resource.download_count|default:0 }}</span>
-                                        </td>
-                                        <td>
-                                            <small>{{ resource.uploaded_date|date:"M d, Y" }}</small>
-                                        </td>
-                                        <td>
-                                            {% if resource.is_approved %}
-                                            <span class="badge bg-success">Approved</span>
-                                            {% else %}
-                                            <span class="badge bg-warning">Pending</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{% url 'resource_detail' resource.id %}" class="btn btn-outline-info" title="View">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                <a href="{% url 'edit_resource' resource.id %}" class="btn btn-outline-warning" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <a href="{% url 'download_resource' resource.id %}" class="btn btn-outline-success" title="Download">
-                                                    <i class="fas fa-download"></i>
-                                                </a>
-                                                <button type="button" class="btn btn-outline-danger" title="Delete" onclick="confirmDelete({{ resource.id }})">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                            <div class="d-flex flex-column align-items-center">
+                                                <span class="fw-bold text-info">{{ resource.views|default:0 }}</span>
+                                                <small class="text-muted">views</small>
                                             </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <span class="fw-bold text-secondary">{{ resource.download_count|default:0 }}</span>
+                                                <small class="text-muted">downloads</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-column">
+                                                <span class="fw-medium">{{ resource.uploaded_date|date:"M d, Y" }}</span>
+                                                <small class="text-muted">{{ resource.uploaded_date|timesince }} ago</small>
+                                            </div>
+                                        </td>
+                                        <td class="text-center pe-4">
+                                            <a href="{% url 'resource_detail' resource.id %}" class="btn btn-sm btn-primary px-3" title="View Details">
+                                                <i class="fas fa-eye me-1"></i>View
+                                            </a>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -138,11 +196,13 @@
                         </div>
                     {% else %}
                         <div class="text-center py-5">
-                            <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
-                            <h4>No Resources Yet</h4>
-                            <p class="text-muted mb-4">You haven't uploaded any teaching resources yet.</p>
-                            <a href="{% url 'upload_resource' %}" class="btn btn-primary">
-                                <i class="fas fa-upload me-2"></i>Upload Your First Resource
+                            <div class="mb-4">
+                                <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                            </div>
+                            <h4 class="fw-bold text-muted mb-3">No Resources Found</h4>
+                            <p class="text-muted mb-4">Start by uploading your first teaching resource</p>
+                            <a href="{% url 'upload_resource' %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-upload me-2"></i>Upload First Resource
                             </a>
                         </div>
                     {% endif %}
@@ -150,106 +210,126 @@
             </div>
         </div>
     </div>
-
-    <!-- Simple Filter Options -->
-    <div class="row mt-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body py-2">
-                    <div class="d-flex justify-content-center">
-                        <div class="btn-group">
-                            <a href="?filter=all" class="btn btn-sm {% if not request.GET.filter or request.GET.filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                All Resources ({{ resource_count|default:0 }})
-                            </a>
-                            <a href="?filter=premium" class="btn btn-sm {% if request.GET.filter == 'premium' %}btn-warning{% else %}btn-outline-warning{% endif %}">
-                                Premium ({{ premium_count|default:0 }})
-                            </a>
-                            <a href="?filter=free" class="btn btn-sm {% if request.GET.filter == 'free' %}btn-success{% else %}btn-outline-success{% endif %}">
-                                Free ({{ free_count|default:0 }})
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
-
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete this resource? This action cannot be undone.</p>
-                <p class="text-danger"><strong>Warning:</strong> All feedback and download records for this resource will also be deleted.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a id="deleteConfirmBtn" href="#" class="btn btn-danger">Delete Resource</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-// Delete confirmation function
-function confirmDelete(resourceId) {
-    // Set the delete URL in the modal button
-    document.getElementById('deleteConfirmBtn').href = "{% url 'delete_resource' 0 %}".replace('0', resourceId);
-    
-    // Show the modal
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    deleteModal.show();
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips if Bootstrap is available
-    if (typeof bootstrap !== 'undefined') {
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    }
-});
-</script>
 
 <style>
-.table th {
-    font-weight: 600;
-    background-color: #f8f9fa;
+/* Enhanced styling */
+.card {
+    border-radius: 12px;
+    overflow: hidden;
 }
 
-.btn-group-sm .btn {
-    padding: 0.25rem 0.5rem;
-    margin: 0 2px;
+.table th {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.04);
+    transition: all 0.2s ease;
 }
 
 .badge {
-    font-size: 0.85em;
-    padding: 0.4em 0.6em;
+    font-weight: 500;
+    letter-spacing: 0.3px;
 }
 
-.card.text-center .card-body h3 {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
+.btn-sm {
+    border-radius: 6px;
+    padding: 0.375rem 0.75rem;
+    font-weight: 500;
 }
 
+/* Responsive adjustments */
 @media (max-width: 768px) {
-    .btn-group-sm .btn {
-        padding: 0.2rem 0.3rem;
-        margin: 0 1px;
-        font-size: 0.75rem;
+    .card-header .btn-group {
+        width: 100%;
+        margin-top: 1rem;
+    }
+    
+    .card-header .btn-group .btn {
+        flex: 1;
+        text-align: center;
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.9rem;
     }
     
     .table th, .table td {
-        padding: 0.5rem;
-        font-size: 0.9rem;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.5rem;
     }
 }
+
+@media (max-width: 576px) {
+    .table td:nth-child(3),
+    .table td:nth-child(4) {
+        display: none;
+    }
+    
+    .table th:nth-child(3),
+    .table th:nth-child(4) {
+        display: none;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .card-header h5 {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+    
+    .btn-sm i {
+        margin-right: 0 !important;
+    }
+    
+    .btn-sm span {
+        display: none;
+    }
+}
+
+/* Animation for table rows */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.table tbody tr {
+    animation: fadeIn 0.3s ease-out;
+    animation-fill-mode: both;
+}
+
+.table tbody tr:nth-child(1) { animation-delay: 0.05s; }
+.table tbody tr:nth-child(2) { animation-delay: 0.1s; }
+.table tbody tr:nth-child(3) { animation-delay: 0.15s; }
+.table tbody tr:nth-child(4) { animation-delay: 0.2s; }
+.table tbody tr:nth-child(5) { animation-delay: 0.25s; }
 </style>
 {% endblock %}

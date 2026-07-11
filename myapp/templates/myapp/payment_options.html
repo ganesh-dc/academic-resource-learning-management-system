@@ -75,60 +75,36 @@
             </div>
           </div>
 
-          <!-- Payment Methods -->
+          <!-- Payment Methods - ONLY eSewa NOW -->
           <div class="card shadow-sm border-0" style="border-radius: 12px; border: 1px solid #e5e7eb;">
             <div class="card-header bg-white border-0 py-3">
               <h4 class="fw-bold mb-0">
                 <i class="fas fa-credit-card text-primary me-2"></i>
-                Choose Payment Method
+                Payment Method
               </h4>
-              <p class="text-muted small mb-0">Select your preferred payment option</p>
+              <p class="text-muted small mb-0">eSewa is currently our only payment option</p>
             </div>
             <div class="card-body">
-              <div class="row g-3">
-                <!-- eSewa -->
-                <div class="col-md-6">
-                  <div class="payment-option">
-                    <input type="radio" name="paymentMethod" id="esewa" value="esewa" checked>
-                    <label for="esewa" class="payment-label">
-                      <div class="d-flex align-items-center">
-                        <div class="payment-icon me-3">
-                          <div class="p-2 rounded-2" style="background-color: #4f46e5;">
-                            <i class="fas fa-mobile-alt fa-2x text-white"></i>
-                          </div>
-                        </div>
-                        <div>
-                          <h6 class="fw-bold mb-1">eSewa</h6>
-                          <p class="text-muted small mb-0">Mobile Wallet</p>
-                        </div>
+              <!-- eSewa as single option -->
+              <div class="payment-option">
+                <input type="radio" name="paymentMethod" id="esewa" value="esewa" checked style="display: none;">
+                <label for="esewa" class="payment-label" style="cursor: default;">
+                  <div class="d-flex align-items-center">
+                    <div class="payment-icon me-3">
+                      <div class="p-2 rounded-2" style="background-color: #4f46e5;">
+                        <i class="fas fa-mobile-alt fa-2x text-white"></i>
                       </div>
-                    </label>
+                    </div>
+                    <div>
+                      <h6 class="fw-bold mb-1">eSewa</h6>
+                      <p class="text-muted small mb-0">Mobile Wallet - Only available payment method</p>
+                    </div>
+                    <div class="ms-auto">
+                      <span class="badge bg-primary">Default</span>
+                    </div>
                   </div>
-                </div>
-
-                <!-- Khalti -->
-                <div class="col-md-6">
-                  <div class="payment-option">
-                    <input type="radio" name="paymentMethod" id="khalti" value="khalti">
-                    <label for="khalti" class="payment-label">
-                      <div class="d-flex align-items-center">
-                        <div class="payment-icon me-3">
-                          <div class="p-2 rounded-2" style="background-color: #7c3aed;">
-                            <i class="fas fa-wallet fa-2x text-white"></i>
-                          </div>
-                        </div>
-                        <div>
-                          <h6 class="fw-bold mb-1">Khalti</h6>
-                          <p class="text-muted small mb-0">Digital Wallet</p>
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-                </div>
+                </label>
               </div>
-
-              
-
 
               <!-- Terms -->
               <div class="mt-4 pt-3 border-top">
@@ -197,7 +173,7 @@
                       style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;"
                       onclick="processPayment()">
                 <i class="fas fa-lock me-2"></i>
-                Pay Rs {{ resource.price }}
+                Pay with eSewa - Rs {{ resource.price }}
               </button>
 
               <!-- Security -->
@@ -208,21 +184,15 @@
                 </p>
               </div>
 
-              <!-- Accepted Payment Methods -->
+              <!-- Accepted Payment Methods - Only eSewa -->
               <div class="border-top pt-3">
-                <h6 class="fw-bold mb-2 small" style="color: #4b5563;">Accepted Payment Methods</h6>
-                <div class="d-flex justify-content-center gap-3 mb-3">
+                <h6 class="fw-bold mb-2 small" style="color: #4b5563;">Accepted Payment Method</h6>
+                <div class="d-flex justify-content-center mb-3">
                   <div class="text-center">
                     <div class="p-2 rounded-2 mb-1" style="background-color: #eef2ff;">
                       <i class="fab fa-cc-visa fa-lg" style="color: #4f46e5;"></i>
                     </div>
                     <small class="text-muted">eSewa</small>
-                  </div>
-                  <div class="text-center">
-                    <div class="p-2 rounded-2 mb-1" style="background-color: #f5f3ff;">
-                      <i class="fas fa-wallet fa-lg" style="color: #7c3aed;"></i>
-                    </div>
-                    <small class="text-muted">Khalti</small>
                   </div>
                 </div>
                 <p class="small text-muted mb-0 text-center">
@@ -291,26 +261,11 @@
   margin-bottom: 10px;
 }
 
-.payment-option input[type="radio"] {
-  display: none;
-}
-
 .payment-label {
   display: block;
   padding: 20px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid #4f46e5;
   border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.payment-label:hover {
-  border-color: #c7d2fe;
-  background-color: #f8fafc;
-}
-
-.payment-option input[type="radio"]:checked + .payment-label {
-  border-color: #4f46e5;
   background-color: #eef2ff;
   box-shadow: 0 2px 8px rgba(79, 70, 229, 0.1);
 }
@@ -336,56 +291,31 @@
 .badge {
   font-weight: 500;
 }
-
-.alert {
-  border-radius: 8px;
-  border: 1px solid #dbeafe;
-}
 </style>
-
 <script>
 function processPayment() {
   const terms = document.getElementById('agreeTerms');
-  const method = document.querySelector('input[name="paymentMethod"]:checked');
   const payBtn = document.getElementById('payButton');
   
+  // Check if terms are agreed
   if (!terms.checked) {
     alert('Please agree to the terms before proceeding.');
     return;
   }
   
-  if (!method) {
-    alert('Please select a payment method.');
-    return;
-  }
-  
   // Disable button and show loading
   payBtn.disabled = true;
-  payBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+  payBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Redirecting to eSewa...';
   
-  // Get selected payment method
-  const paymentMethod = method.value;
-  
-  // Redirect to initiate payment
-  setTimeout(() => {
-    if (paymentMethod === 'demo') {
-      window.location.href = "{% url 'initiate_payment' resource.id %}";
-    } else {
-      window.location.href = "{% url 'initiate_payment' resource.id %}?method=" + paymentMethod;
-    }
-  }, 1000);
+  // Only eSewa is available
+  window.location.href = "{% url 'initiate_esewa_payment' resource.id %}";
 }
 
-// Initialize eSewa as selected by default
+// Add click event listener to button
 document.addEventListener('DOMContentLoaded', function() {
-  const esewaRadio = document.getElementById('esewa');
-  if (esewaRadio) {
-    esewaRadio.checked = true;
-    // Add active class to eSewa label
-    const esewaLabel = document.querySelector('label[for="esewa"]');
-    if (esewaLabel) {
-      esewaLabel.classList.add('active');
-    }
+  const payButton = document.getElementById('payButton');
+  if (payButton) {
+    payButton.addEventListener('click', processPayment);
   }
 });
 </script>

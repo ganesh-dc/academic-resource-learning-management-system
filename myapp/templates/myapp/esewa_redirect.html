@@ -1,0 +1,65 @@
+<!-- myapp/templates/payment/esewa_redirect.html -->
+{% extends 'myapp/base.html' %}
+{% block title %}Redirecting to eSewa...{% endblock %}
+
+{% block content %}
+<div class="container text-center py-5">
+    <!-- Loading Animation -->
+    <div class="mb-4">
+        <div class="spinner-border text-primary" style="width: 60px; height: 60px;"></div>
+    </div>
+    
+    <h3 class="fw-bold mb-3">Redirecting to eSewa Payment</h3>
+    <p class="text-muted mb-4">
+        Please wait while we redirect you to eSewa's secure payment page...
+    </p>
+    
+    <div class="alert alert-info d-inline-block">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Do not close this window</strong>
+    </div>
+    
+    <!-- Hidden form that auto-submits to eSewa -->
+    <form id="esewaForm" action="{{ esewa_url }}" method="POST" style="display: none;">
+        <input type="hidden" name="amount" value="{{ esewa_data.amount }}">
+        <input type="hidden" name="tax_amount" value="{{ esewa_data.tax_amount }}">
+        <input type="hidden" name="total_amount" value="{{ esewa_data.total_amount }}">
+        <input type="hidden" name="transaction_uuid" value="{{ esewa_data.transaction_uuid }}">
+        <input type="hidden" name="product_code" value="{{ esewa_data.product_code }}">
+        <input type="hidden" name="product_service_charge" value="{{ esewa_data.product_service_charge }}">
+        <input type="hidden" name="product_delivery_charge" value="{{ esewa_data.product_delivery_charge }}">
+        <input type="hidden" name="success_url" value="{{ esewa_data.success_url }}">
+        <input type="hidden" name="failure_url" value="{{ esewa_data.failure_url }}">
+        <input type="hidden" name="signed_field_names" value="{{ esewa_data.signed_field_names }}">
+        <input type="hidden" name="signature" value="{{ esewa_data.signature }}">
+    </form>
+    
+    <!-- Manual submit button (hidden by default) -->
+    <div class="mt-4" id="manualSubmit" style="display: none;">
+        <p class="text-muted mb-3">If not redirected automatically:</p>
+        <button onclick="document.getElementById('esewaForm').submit()" 
+                class="btn btn-primary btn-lg">
+            <i class="fas fa-external-link-alt me-2"></i>
+            Click to Proceed to eSewa
+        </button>
+    </div>
+</div>
+
+<script>
+// Auto-submit form after 2 seconds
+setTimeout(function() {
+    document.getElementById('esewaForm').submit();
+}, 2000);
+
+// Show manual button after 5 seconds (fallback)
+setTimeout(function() {
+    document.getElementById('manualSubmit').style.display = 'block';
+}, 5000);
+</script>
+
+<style>
+.spinner-border {
+    border-width: 3px;
+}
+</style>
+{% endblock %}

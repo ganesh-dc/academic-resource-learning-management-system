@@ -3,157 +3,266 @@
 {% block title %}Student Dashboard{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Student Dashboard</h2>
-
-<div class="row">
-    <div class="col-md-8">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Recent Resources</h5>
+<div class="container-fluid py-4">
+    <!-- Dashboard Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="fw-bold mb-2">
+                        <i class="fas fa-graduation-cap text-primary me-2"></i>Student Dashboard
+                    </h2>
+                    <p class="text-muted mb-0">Welcome back, {{ user.full_name|default:user.username }}!</p>
+                </div>
+                <div class="text-end">
+                    <div class="badge bg-light text-dark px-3 py-2">
+                        <i class="fas fa-user-graduate me-2"></i>
+                        {{ user.get_program_display|default:"Student" }}
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                {% if recent_resources %}
-                    <div class="list-group">
-                        {% for resource in recent_resources %}
-                        <div class="list-group-item border-0 mb-2 shadow-sm">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1 fw-bold">{{ resource.title }}</h6>
-                                <div>
-                                    {% if resource.is_premium %}
-                                        {% if resource.id in purchased_resource_ids %}
-                                            <span class="badge bg-success">Purchased</span>
-                                        {% else %}
-                                            <span class="badge bg-warning">Premium - ₹{{ resource.price }}</span>
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="badge bg-success">Free</span>
-                                    {% endif %}
-                                    <span class="badge bg-secondary ms-1">
-                                        {{ resource.category.name|default:"Uncategorized" }}
-                                    </span>
-                                </div>
-                            </div>
-                            <p class="mb-1 text-muted">{{ resource.description|truncatewords:30 }}</p>
-                            <small class="text-muted d-block">
-                                <i class="fas fa-user me-1"></i>{{ resource.uploaded_by.full_name|default:resource.uploaded_by.username }}
-                                <i class="fas fa-calendar ms-3 me-1"></i>{{ resource.uploaded_date|date:"M d, Y" }}
-                                <i class="fas fa-eye ms-3 me-1"></i>{{ resource.views }} views
-                            </small>
-                            <div class="mt-3">
-                                <a href="{% url 'resource_detail' resource.id %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye me-1"></i>View Details
-                                </a>
-                                
-                                <!-- UPDATED SECTION: Role-based buttons -->
-                                {% if request.user.role == 'teacher' or request.user.role == 'admin' %}
-                                    <!-- Teachers/Admins: Always show download -->
-                                    <a href="{% url 'download_resource' resource.id %}" class="btn btn-sm btn-outline-success">
-                                        <i class="fas fa-download me-1"></i> Download
-                                    </a>
-                                {% else %}
-                                    <!-- Students: Check purchase status -->
-                                    {% if not resource.is_premium or resource.id in purchased_resource_ids %}
-                                        <a href="{% url 'download_resource' resource.id %}" class="btn btn-sm btn-outline-success">
-                                            <i class="fas fa-download me-1"></i> Download
-                                        </a>
-                                    {% else %}
-                                        <a href="{% url 'purchase_resource' resource.id %}" class="btn btn-sm btn-outline-warning">
-                                            <i class="fas fa-shopping-cart me-1"></i> Purchase (₹{{ resource.price }})
-                                        </a>
-                                    {% endif %}
-                                {% endif %}
-                            </div>
+            <hr class="mt-3">
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Recent Resources -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-book-open text-primary me-2"></i>Recent Resources
+                        </h5>
+                        <span class="badge bg-primary">{{ recent_resources|length }} available</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_resources %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-3">Resource</th>
+                                        <th class="text-center">Type</th>
+                                        <th class="text-center">Teacher</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resource in recent_resources %}
+                                    <tr>
+                                        <td class="ps-3">
+                                            <div class="d-flex align-items-start">
+                                                <div class="me-2">
+                                                    <i class="fas fa-file text-muted"></i>
+                                                </div>
+                                                <div>
+                                                    <a href="{% url 'resource_detail' resource.id %}" 
+                                                       class="text-decoration-none text-dark fw-medium d-block">
+                                                        {{ resource.title|truncatechars:40 }}
+                                                    </a>
+                                                    <small class="text-muted d-block">
+                                                        {{ resource.description|truncatechars:50 }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if resource.is_premium %}
+                                                {% if resource.id in purchased_resource_ids %}
+                                                    <span class="badge bg-success">Purchased</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Premium</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-success">Free</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <small class="text-muted">
+                                                {{ resource.uploaded_by.username|truncatechars:15 }}
+                                            </small>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex gap-2 justify-content-center">
+                                                <a href="{% url 'resource_detail' resource.id %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if not resource.is_premium or resource.id in purchased_resource_ids %}
+                                                    <a href="{% url 'download_resource' resource.id %}" 
+                                                       class="btn btn-sm btn-outline-success">
+                                                        <i class="fas fa-download"></i>
+                                                    </a>
+                                                {% else %}
+                                                    <a href="{% url 'purchase_resource' resource.id %}" 
+                                                       class="btn btn-sm btn-outline-warning">
+                                                        <i class="fas fa-shopping-cart"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No resources available yet. Teachers will upload resources soon.</p>
-                    </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted mb-2">No Resources Yet</h5>
+                            <p class="text-muted mb-0">Teachers will upload resources soon.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% if recent_resources %}
+                <div class="card-footer bg-white py-3 text-center">
+                    <a href="{% url 'resource_list' %}" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Browse All Resources
+                    </a>
+                </div>
                 {% endif %}
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-4">
-        <!-- My Profile Button (Option 2 - Modern card design) -->
-        <div class="card shadow-lg mb-4 border-0" style="border-radius: 12px; overflow: hidden;">
-            <div class="card-header bg-primary text-white py-3 text-center">
-                <i class="fas fa-user-circle me-2"></i>
-                <strong>My Account</strong>
-            </div>
-            <div class="card-body text-center py-4" style="background-color: #f8f9ff;">
-                <div class="mb-3">
-                    <i class="fas fa-user-circle fa-3x text-primary"></i>
+
+        <!-- Right Column: Sidebar -->
+        <div class="col-lg-4">
+            <!-- Profile Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-circle me-2"></i>My Profile
+                    </h5>
                 </div>
-                <a href="{% url 'profile' %}" class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm">
-                    <i class="fas fa-user-edit me-2"></i> View Profile
-                </a>
-                <div class="mt-2">
-                    <small class="text-muted">{{ user.email }}</small>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-user-circle fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="fw-bold">{{ user.full_name|default:user.username }}</h5>
+                    <p class="text-muted mb-3">{{ user.email }}</p>
+                    <a href="{% url 'profile' %}" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-user-edit me-2"></i>View Profile
+                    </a>
                 </div>
             </div>
-        </div>
-        
-        <div class="card shadow-sm">
-            <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0">Quick Actions</h5>
-            </div>
-            <div class="card-body">
-                <a href="{% url 'resource_list' %}" class="btn btn-primary mb-3 w-100">
-                    <i class="fas fa-search me-2"></i> Browse All Resources
-                </a>
-                <!-- FIXED: Changed from 'my_resources' to 'student_purchased_resources' -->
-                <a href="{% url 'student_purchased_resources' %}" class="btn btn-success mb-3 w-100">
-                    <i class="fas fa-shopping-bag me-2"></i> My Purchased Resources
-                </a>
-                <!-- My Profile button removed from here -->
-            </div>
-        </div>
-        
-        <div class="card shadow-sm mt-4">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">My Stats</h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <i class="fas fa-file-alt text-primary me-2"></i>
-                    <strong>Resources Available:</strong> 
-                    <span class="float-end">{{ recent_resources|length }}</span>
+
+            <!-- Quick Actions -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt text-warning me-2"></i>Quick Actions
+                    </h5>
                 </div>
-                <div class="mb-3">
-                    <i class="fas fa-shopping-cart text-success me-2"></i>
-                    <strong>Purchased Resources:</strong> 
-                    <span class="float-end">{{ purchased_resource_ids|length }}</span>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'student_purchased_resources' %}" class="btn btn-outline-success text-start">
+                            <i class="fas fa-shopping-bag me-2"></i>My Purchases
+                            <span class="badge bg-success float-end">{{ purchased_resource_ids|length }}</span>
+                        </a>
+                        <a href="{% url 'resource_list' %}" class="btn btn-outline-primary text-start">
+                            <i class="fas fa-search me-2"></i>Browse Resources
+                        </a>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <i class="fas fa-graduation-cap text-warning me-2"></i>
-                    <strong>Program:</strong> 
-                    <span class="float-end">{{ user.get_program_display|default:"Not specified" }}</span>
+            </div>
+
+            <!-- Student Stats -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar text-info me-2"></i>My Stats
+                    </h5>
                 </div>
-                <div class="mb-3">
-                    <i class="fas fa-calendar-alt text-danger me-2"></i>
-                    <strong>Semester:</strong> 
-                    <span class="float-end">{{ user.semester|default:"Not specified" }}</span>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item border-0 px-0 py-2 d-flex justify-content-between">
+                            <span class="text-muted">
+                                <i class="fas fa-file-alt text-primary me-2"></i>Available Resources
+                            </span>
+                            <span class="fw-bold">{{ recent_resources|length }}</span>
+                        </div>
+                        <div class="list-group-item border-0 px-0 py-2 d-flex justify-content-between">
+                            <span class="text-muted">
+                                <i class="fas fa-shopping-cart text-success me-2"></i>Purchased
+                            </span>
+                            <span class="fw-bold">{{ purchased_resource_ids|length }}</span>
+                        </div>
+                        <div class="list-group-item border-0 px-0 py-2 d-flex justify-content-between">
+                            <span class="text-muted">
+                                <i class="fas fa-graduation-cap text-warning me-2"></i>Program
+                            </span>
+                            <span class="fw-medium">{{ user.get_program_display|default:"-" }}</span>
+                        </div>
+                        <div class="list-group-item border-0 px-0 py-2 d-flex justify-content-between">
+                            <span class="text-muted">
+                                <i class="fas fa-layer-group text-danger me-2"></i>Semester
+                            </span>
+                            <span class="fw-medium">{{ user.semester|default:"-" }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Add FontAwesome for icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    .list-group-item {
-        border-radius: 8px;
-        transition: transform 0.2s;
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    vertical-align: middle;
+    padding: 1rem 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+
+.list-group-item {
+    background: transparent;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.9rem;
     }
-    .list-group-item:hover {
-        transform: translateY(-2px);
+    
+    .btn-sm i {
+        margin: 0 !important;
     }
-    .btn {
-        border-radius: 6px;
+    
+    .btn-sm span {
+        display: none;
     }
+    
+    .table th:nth-child(2),
+    .table td:nth-child(2),
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        display: none;
+    }
+}
 </style>
 {% endblock %}
